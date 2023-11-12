@@ -48,33 +48,43 @@ export function getDeclarationsAndDependencies(code) {
     const cursor = tree.walk()
     cursor.gotoFirstChild()
 
-    /** @type {ParsedDeclaration|Error|null} */
-    let parsed = null
-    do {
-        switch (cursor.nodeType) {
-            case 'variable_declaration':
-                parsed = parseVariableDeclaration(cursor.currentNode, emptyScope())
-                break
-            case 'function_declaration':
-                parsed = parseFunctionDeclaration(cursor.currentNode, emptyScope())
-                break
-            case 'comment':
-                //ignore
-                parsed = null
-                break
-            default:
-                logNode(cursor.currentNode)
-                parsed = new Error(`unknown node type '${cursor.nodeType}'`)
-        }
+    try {
 
-        if (parsed instanceof Error) {
-            throw parsed
-        }
-        if (parsed) {
-            result.set(parsed.name, parsed)
-        }
-    } while (cursor.gotoNextSibling())
+        /** @type {ParsedDeclaration|Error|null} */
+        let parsed = null
+        do {
+            switch (cursor.nodeType) {
+                case 'variable_declaration':
+                    parsed = parseVariableDeclaration(cursor.currentNode, emptyScope())
+                    break
+                case 'function_declaration':
+                    parsed = parseFunctionDeclaration(cursor.currentNode, emptyScope())
+                    break
+                case 'expression_statement':
+                // so far only 
+                // `console.warn('Compiled in DEV mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');`
+                case 'comment':
+                    //ignore
+                    parsed = null
+                    break
+                default:
+                    logNode(cursor.currentNode)
+                    parsed = new Error(`unknown node type '${cursor.nodeType}'`)
+            }
 
+            if (parsed instanceof Error) {
+                throw parsed
+            }
+            if (parsed) {
+                result.set(parsed.name, parsed)
+            }
+        } while (cursor.gotoNextSibling())
+
+    } catch (ex) {
+        console.warn('Failed at position:', { start: cursor.startPosition, end: cursor.endPosition })
+        console.warn(cursor.currentNode.text)
+        throw ex
+    }
     return result
 }
 

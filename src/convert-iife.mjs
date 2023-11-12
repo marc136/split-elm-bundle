@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path';
 import { jsParser } from './js-parser.mjs';
+import { getDeclarationsAndDependencies } from './dependency-graph.mjs';
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
@@ -41,6 +42,28 @@ export function convert(iife) {
     ].join('\n')
 
     return { esm, programNodes }
+}
+
+export async function wipAnalyze(input) {
+    const iife = await fs.readFile(input, 'utf-8')
+
+    // `function F` is always exported first by the compiler
+    const start = iife.indexOf('function F')
+    // and the `_Platform_export` is always last in the file
+    const platformExportIndex = iife.lastIndexOf('_Platform_export(')
+    // between those is our main code, which we want to copy
+
+    const code = iife.substring(start, platformExportIndex)
+
+    const map = getDeclarationsAndDependencies(code)
+
+    // and the object passed to `_Platform_export` contains all Elm programs
+    // which we will parse to export each program separately
+    // With tree-sitter we can ignore that we have the injection of global this at the very end
+    // const programNodes = parsePlatformExport(iife.substring(iife.indexOf('{', platformExportIndex)))
+
+    console.log('Map size:', map.size)
+    return map
 }
 
 /**
