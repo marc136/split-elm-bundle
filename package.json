@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tsc"
+    "check": "tsc",
+    "coverage": "vitest run --coverage",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "Marc Walter",
@@ -16,6 +18,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.8.9",
-    "typescript": "^5.2.2"
+    "@vitest/coverage-v8": "^0.34.6",
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
   }
 }
