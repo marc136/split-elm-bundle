@@ -14,13 +14,23 @@ import { jsParser } from './js-parser.mjs';
 /**
  * @param {string} identifier
  * @param {DependencyMap} map 
- * @returns {Array<string>}
+ * @returns {Set<string>}
  */
 export function getDependenciesOf(identifier, map) {
+    return new Set(gatherNeeds(identifier, map))
+}
+
+/**
+ * Gathers all direct and indirect needs of an identifier in one list.
+ * The list may contain duplicate entries.
+ * @param {string} identifier
+ * @param {DependencyMap} map 
+ * @returns {Array<string>}
+ */
+function gatherNeeds(identifier, map) {
     const direct = map.get(identifier)
     if (!direct) throw new Error(`Unknown identifier '${identifier}'`)
-    // TODO recurse
-    return direct.needs
+    return direct.needs.concat(direct.needs.flatMap(n => gatherNeeds(n, map)))
 }
 
 /**

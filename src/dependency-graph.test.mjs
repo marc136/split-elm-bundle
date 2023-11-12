@@ -223,20 +223,21 @@ var $author$project$Static$main = A2(
 
     test('For `_List_fromArray`', () => {
         const actual = getDependenciesOf('_List_fromArray', map)
-        expect(actual).toMatchObject(['_List_Nil', '_List_Cons'])
+        expect(actual).toMatchObject(new Set(['_List_Nil', '_List_Cons']))
     })
 
     test('For $author$project$Static$main', () => {
         const actual = getDependenciesOf('$author$project$Static$main', map)
         expect(actual).toMatchInlineSnapshot(`
-          [
+          Set {
             "A2",
             "$elm$html$Html$div",
             "_List_fromArray",
             "$elm$html$Html$Attributes$id",
-            "_List_fromArray",
             "$elm$html$Html$text",
-          ]
+            "_List_Nil",
+            "_List_Cons",
+          }
         `)
     })
 })
