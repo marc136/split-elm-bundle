@@ -216,6 +216,7 @@ function findNeeds(node, scope) {
                         return []
                     case 'function':
                     case 'object':
+                    case 'member_expression':
                     case 'unary_expression':
                     case 'binary_expression':
                     case 'ternary_expression':
@@ -240,6 +241,9 @@ function findNeeds(node, scope) {
         }
         case 'for_statement': {
             return findNeedsInForStatement(node, scope)
+        }
+        case 'for_in_statement': {
+            return findNeedsInForInStatement(node, scope)
         }
         case 'variable_declaration': {
             const result = parseVariableDeclarations(node, scope)
@@ -278,6 +282,9 @@ function findNeeds(node, scope) {
             return wrapIdentifier(node.text, scope)
         case 'return_statement': {
             return findNeeds(node.children[1], scope)
+        }
+        case 'try_statement': {
+            return findNeedsInStatementBlock(node.children[1], newScope(scope))
         }
         case 'statement_block': {
             return findNeedsInStatementBlock(node, scope)
@@ -404,6 +411,45 @@ function findNeedsInForStatement(node, parentScope) {
     return needs.flat().filter(need => !scope.declarations.includes(need))
 }
 
+
+/**
+ * 
+ * @param {SyntaxNode} node with type `for_statement`
+ * @param {DeclarationsInScope} parentScope
+ * @returns {Array<string>}
+ */
+function findNeedsInForInStatement(node, parentScope) {
+    /** @type {DeclarationsInScope} */
+    const scope = newScope(parentScope, [])
+    /** @type {Array<Array<string>>} */
+    const needs = []
+
+    const cursor = node.walk()
+    cursor.gotoFirstChild()
+
+    assert(cursor.nodeType === 'for')
+    assert(cursor.gotoNextSibling())
+    // @ts-expect-error TS does not know that we are traversing a structure
+    assert(cursor.nodeType === '(')
+    assert(cursor.gotoNextSibling())
+    assert(cursor.nodeType === 'var')
+    assert(cursor.gotoNextSibling())
+    assert(cursor.nodeType === 'identifier')
+    scope.declarations.push(cursor.currentNode.text)
+    assert(cursor.gotoNextSibling())
+    assert(cursor.nodeType === 'in')
+    assert(cursor.gotoNextSibling())
+    needs.push(findNeeds(cursor.currentNode, scope))
+    assert(cursor.gotoNextSibling())
+    assert(cursor.nodeType === ')')
+    assert(cursor.gotoNextSibling())
+    assert(cursor.nodeType === 'statement_block')
+    needs.push(findNeedsInStatementBlock(cursor.currentNode, scope))
+    assert(cursor.gotoNextSibling() === false)
+
+    return needs.flat()
+}
+
 /**
  * 
  * @param {SyntaxNode} node with type `statement_block`
@@ -443,6 +489,10 @@ function findNeedsInStatementBlock(node, parentScope) {
             case 'for_statement':
                 needs.push(findNeedsInForStatement(cursor.currentNode, scope))
                 break
+            case 'for_in_statement':
+                needs.push(findNeedsInForInStatement(cursor.currentNode, scope))
+                break
+            case 'try_statement':
             case 'return_statement':
                 needs.push(findNeeds(cursor.currentNode, scope))
                 break
@@ -454,7 +504,7 @@ function findNeedsInStatementBlock(node, parentScope) {
                 break
             default:
                 logNode(cursor.currentNode)
-                parsed = new Error(`unknown node type '${cursor.nodeType}'`)
+                parsed = new Error(`TODO findNeedsInStatementBlock '${cursor.nodeType}'`)
         }
 
         if (parsed instanceof Error) {

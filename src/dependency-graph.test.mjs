@@ -377,6 +377,40 @@ function _Utils_eq(x, y)
       ]
     `)
     })
+
+    test('Support `for_in_statement`', () => {
+        const chunk = `
+function abc() {
+    for (var one in x) {
+        console.log(one)
+    }
+
+    try {
+        for (var two in one) {
+            console.log(two)
+        }
+    }
+}
+
+`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "abc",
+          {
+            "endIndex": 162,
+            "name": "abc",
+            "needs": [
+              "x",
+              "one",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+    })
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {
