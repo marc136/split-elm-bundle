@@ -300,7 +300,10 @@ function findNeeds(node, scope) {
         case 'array':
         case 'pair':
         case 'assignment_expression':
+        case 'sequence_expression':
         case 'member_expression':
+        case 'do_statement':
+        case 'while_statement':
         case 'expression_statement':
         case 'update_expression':
         case 'new_expression':
@@ -314,6 +317,8 @@ function findNeeds(node, scope) {
         case 'throw_statement': {
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
         }
+        case '{':
+        case '}':
         case 'true':
         case 'false':
         case 'null':
@@ -376,6 +381,7 @@ function findNeedsInForStatement(node, parentScope) {
         switch (cursor.nodeType) {
             case 'for':
             case '(':
+            case 'empty_statement':
                 break
             case 'variable_declaration':
                 // Variable declaration is hoisted out of a for_statement and can be used later.
@@ -390,6 +396,7 @@ function findNeedsInForStatement(node, parentScope) {
             case 'expression_statement':
             case 'update_expression':
             case 'assignment_expression':
+            case 'sequence_expression':
                 needs.push(findNeeds(cursor.currentNode, scope))
                 break
             case ')':
@@ -399,6 +406,7 @@ function findNeedsInForStatement(node, parentScope) {
                 needs.push(findNeedsInStatementBlock(cursor.currentNode, scope))
                 break
             case '}':
+            case 'comment':
                 break
             default:
                 logNode(cursor.currentNode)
@@ -492,6 +500,8 @@ function findNeedsInStatementBlock(node, parentScope) {
             case 'for_in_statement':
                 needs.push(findNeedsInForInStatement(cursor.currentNode, scope))
                 break
+            case 'do_statement':
+            case 'while_statement':
             case 'try_statement':
             case 'return_statement':
                 needs.push(findNeeds(cursor.currentNode, scope))

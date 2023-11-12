@@ -411,6 +411,83 @@ function abc() {
       ]
     `)
     })
+
+    test('Support `sequence_expression` inside `for_statement`', () => {
+        const chunk = `
+function _Utils_cmp(x,y,ord) 
+{
+    for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); fake = global1, x = x.b, y = global2) {} // WHILE_CONSES
+}
+`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_Utils_cmp",
+          {
+            "endIndex": 147,
+            "name": "_Utils_cmp",
+            "needs": [
+              "_Utils_cmp",
+              "fake",
+              "global1",
+              "global2",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+    })
+
+    test('Support `while` and `do...while` loops', () => {
+        const chunk = `
+function _String_reverse(str)
+{
+        var len = str.length;
+        var arr = new Array(len);
+        var i = 0;
+        while (i < len && global1)
+        {
+                var word = str.charCodeAt(i);
+                if (0xD800 <= word && word <= 0xDBFF)
+                {
+                        arr[len - i] = str[i + 1];
+                        i++;
+                        arr[len - i] = str[i - 1];
+                        i++;
+                }
+                else
+                {
+                        arr[len - i] = str[i];
+                        i++;
+                }
+        }
+
+        do {
+            global2()
+        } while (global3)
+        return arr.join('');
+}`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_String_reverse",
+          {
+            "endIndex": 692,
+            "name": "_String_reverse",
+            "needs": [
+              "global1",
+              "global2",
+              "global3",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+    })
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {
