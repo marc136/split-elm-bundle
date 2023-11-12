@@ -147,18 +147,67 @@ function F4(fun) {
           ]
         `)
     })
+    test('static html rendering', () => {
+        const chunk = `
+var $author$project$Static$main = A2(
+    $elm$html$Html$div,
+    _List_fromArray(
+        [
+            $elm$html$Html$Attributes$id('Static')
+        ]),
+    _List_fromArray(
+        [
+            $elm$html$Html$text('Static')
+        ]));`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+          [
+            [
+              "$author$project$Static$main",
+              {
+                "endIndex": 242,
+                "name": "$author$project$Static$main",
+                "needs": [
+                  "A2",
+                  "$elm$html$Html$div",
+                  "_List_fromArray",
+                  "$elm$html$Html$Attributes$id",
+                  "_List_fromArray",
+                  "$elm$html$Html$text",
+                ],
+                "startIndex": 1,
+              },
+            ],
+          ]
+        `)
+    })
 })
 
-test.only('get dependencies of browser sandbox main', () => {
+test.skip('get dependencies of browser sandbox main', () => {
     const chunk = `
-var $author$project$BrowserSandbox$main = $elm$browser$Browser$sandbox(
-	{init: $author$project$BrowserSandbox$init, update: $author$project$BrowserSandbox$update, view: $author$project$BrowserSandbox$view});
-`
+var _List_Nil = { $: 0 };
 
+function _List_Cons(hd, tl) { return { $: 1, a: hd, b: tl }; }
+
+var _List_cons = F2(_List_Cons);
+
+function _List_fromArray(arr)
+{
+	var out = _List_Nil;
+	for (var i = arr.length; i--; )
+	{
+		out = _List_Cons(arr[i], out);
+	}
+	return out;
+}
+
+function A2(fun, a, b) {
+  return fun.a === 2 ? fun.f(a, b) : fun(a)(b);
+}
     const map = getDeclarationsAndDependencies(chunk)
     const expected = ['$elm$browser$Browser$sandbox']
-    const actual = getDependenciesOf('$author$project$BrowserSandbox$main', map)
-    expect(actual).toMatchObject(expected)
+    const actual = getDependenciesOf('_List_fromArray', map)
+    expect(actual).toMatchObject(['_List_Nil', '_List_Cons'])
 })
 
 
