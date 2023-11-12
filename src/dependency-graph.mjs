@@ -387,8 +387,6 @@ function findNeeds(node, scope) {
         }
         case 'shorthand_property_identifier':
             return [node.text]
-        case 'template_string':
-        // unused by Elm
         default:
             logNode(node)
             throw new Error(`todo findNeeds('${node.type}')`)
