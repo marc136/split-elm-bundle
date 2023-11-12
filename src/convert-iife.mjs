@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path';
 import { jsParser } from './js-parser.mjs';
-import { getDeclarationsAndDependencies } from './dependency-graph.mjs';
+import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs';
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
@@ -47,23 +47,40 @@ export function convert(iife) {
 export async function wipAnalyze(input) {
     const iife = await fs.readFile(input, 'utf-8')
 
-    // `function F` is always exported first by the compiler
-    const start = iife.indexOf('function F')
-    // and the `_Platform_export` is always last in the file
-    const platformExportIndex = iife.lastIndexOf('_Platform_export(')
-    // between those is our main code, which we want to copy
+    const { esm, programNodes } = convert(iife)
 
-    const code = iife.substring(start, platformExportIndex)
+    const map = getDeclarationsAndDependencies(esm)
 
-    const map = getDeclarationsAndDependencies(code)
 
-    // and the object passed to `_Platform_export` contains all Elm programs
-    // which we will parse to export each program separately
-    // With tree-sitter we can ignore that we have the injection of global this at the very end
-    // const programNodes = parsePlatformExport(iife.substring(iife.indexOf('{', platformExportIndex)))
 
-    console.log('Map size:', map.size)
-    return map
+    const deps = getDependenciesOf('Static', map)
+
+    let chunks = Array.from(deps, key => map.declarations.get(key))
+        .filter(val => !!val)
+        .concat(...map.unnamed)
+
+    // sort deps by occurrence in Elm file
+    chunks = chunks.sort((a, b) => a?.startIndex - b?.startIndex)
+
+    // then copy only those chunks into a new file
+    let newEsm = `// extracted from ${input}\n`
+    for (const chunk of chunks) {
+        if (!chunk || chunk.endIndex <= chunk.startIndex) {
+            const msg = 'Expected chunk with a startIndex and endIndex'
+            console.error(msg, chunk)
+            throw new Error(msg)
+        }
+        newEsm += esm.substring(chunk.startIndex, chunk.endIndex) + '\n'
+    }
+
+    newEsm += '\n' + programNodesToJs(programNodes) + '\n'
+
+    // then I can diff the output
+    // and check if the new file still works
+
+    await fs.writeFile(input + '.marc.mjs', newEsm, 'utf-8')
+
+    return { map, extracted: newEsm }
 }
 
 /**

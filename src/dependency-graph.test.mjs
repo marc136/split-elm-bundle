@@ -63,20 +63,22 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
 });`
     const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
-          [
-            [
-              "_VirtualDom_init",
-              {
-                "endIndex": 384,
-                "name": "_VirtualDom_init",
-                "needs": [
-                  "F4",
-                ],
-                "startIndex": 1,
-              },
+      [
+        [
+          "_VirtualDom_init",
+          {
+            "endIndex": 384,
+            "name": "_VirtualDom_init",
+            "needs": [
+              "F4",
+              "_Debug_crash",
+              "_VirtualDom_render",
             ],
-          ]
-        `)
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
   })
 
   test('Function declaration with a simple call expression', () => {
@@ -147,6 +149,37 @@ function F4(fun) {
           ]
         `)
   })
+
+  test('Nested function declaration which calls itself', () => {
+    const chunk = `
+function _VirtualDom_makeCallback(eventNode, initialHandler)
+{
+  function callback(event)
+  {
+      var handler = callback.q;
+      // ...
+  }
+
+  callback.q = initialHandler;
+
+  return callback;
+}`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+[
+  [
+    "_VirtualDom_makeCallback",
+    {
+      "endIndex": 197,
+      "name": "_VirtualDom_makeCallback",
+      "needs": [],
+      "startIndex": 1,
+    },
+  ],
+]
+`)
+  })
+
 
   test('static html rendering', () => {
     const chunk = `
@@ -239,7 +272,7 @@ var _JsArray_foldr = F3(function(func, acc, array)
         `)
   })
 
-  test('Handles `switch_statement` and variables it introduces in the scope', () => {
+  test('`switch_statement` and variables it introduces in the scope', () => {
     const chunk = `
 function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
 {
@@ -280,6 +313,7 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
             "name": "_Debug_crash",
             "needs": [
               "_Debug_regionToString",
+              "_Debug_toString",
             ],
             "startIndex": 1,
           },
@@ -288,7 +322,7 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
     `)
   })
 
-  test('Parses many `variable_delarator`s in one `variable_declaration`', () => {
+  test('Many `variable_delarator`s in one `variable_declaration`', () => {
     const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
     const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
@@ -345,7 +379,7 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
         `)
   })
 
-  test('Support `assignment_expression` inside `for_statement`', () => {
+  test('`assignment_expression` inside `for_statement`', () => {
     const chunk = `
 function _Utils_eq(x, y)
 {
@@ -378,7 +412,7 @@ function _Utils_eq(x, y)
     `)
   })
 
-  test('Support `for_in_statement`', () => {
+  test('`for_in_statement`', () => {
     const chunk = `
 function abc() {
     for (var one in x) {
@@ -412,7 +446,7 @@ function abc() {
     `)
   })
 
-  test('Support `sequence_expression` inside `for_statement`', () => {
+  test('`sequence_expression` inside `for_statement`', () => {
     const chunk = `
 function _Utils_cmp(x,y,ord) 
 {
@@ -428,7 +462,6 @@ function _Utils_cmp(x,y,ord)
             "endIndex": 147,
             "name": "_Utils_cmp",
             "needs": [
-              "_Utils_cmp",
               "fake",
               "global1",
               "global2",
@@ -440,7 +473,7 @@ function _Utils_cmp(x,y,ord)
     `)
   })
 
-  test('Support `while` and `do...while` loops', () => {
+  test('`while` and `do...while` loops', () => {
     const chunk = `
 function _String_reverse(str)
 {
@@ -489,7 +522,7 @@ function _String_reverse(str)
     `)
   })
 
-  test('Support `augmented_assignment_expression`', () => {
+  test('`augmented_assignment_expression`', () => {
     const chunk = `
 function _Char_fromCode(code)
 {
@@ -525,7 +558,7 @@ function _Char_fromCode(code)
   })
 
 
-  test('Support `assignment_expression` inside function `arguments`', () => {
+  test('`assignment_expression` inside function `arguments`', () => {
     const chunk = `
 function sendToApp(msg, viewMetadata)
 {
@@ -590,7 +623,7 @@ function _Platform_setupOutgoingPort(name, sendToApp)
     `)
   })
 
-  test('Support `assignment_expression` inside function `arguments`', () => {
+  test('`assignment_expression` inside function `arguments`', () => {
     const chunk = `
 function _Platform_setupOutgoingPort(name)
 {
@@ -608,10 +641,7 @@ function _Platform_setupOutgoingPort(name)
             }
             return init;
     });
-}
-`
-    console.warn(jsParser.parse(chunk).rootNode.toString())
-
+}`
     const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
@@ -626,6 +656,7 @@ function _Platform_setupOutgoingPort(name)
               "subs",
               "_Json_unwrap",
               "converter",
+              "init",
             ],
             "startIndex": 1,
           },
@@ -634,7 +665,7 @@ function _Platform_setupOutgoingPort(name)
     `)
   })
 
-  test('Support labeled statements', () => {
+  test('labeled statements', () => {
     const chunk = `
 var $elm$core$Dict$foldr = F3(
 	function (func, acc, t) {
@@ -660,10 +691,7 @@ var $elm$core$Dict$foldr = F3(
 				continue foldr;
 			}
 		}
-	});
-`
-    console.warn(jsParser.parse(chunk).rootNode.toString())
-
+	});`
     const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
@@ -682,6 +710,125 @@ var $elm$core$Dict$foldr = F3(
         ],
       ]
     `)
+  })
+
+
+  test('`_VirtualDom_init`', () => {
+    const chunk = `
+var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
+{
+// NOTE: this function needs _Platform_export available to work
+
+/**_UNUSED/
+var node = args['node'];
+//*/
+/**/
+var node = args && args['node'] ? args['node'] : _Debug_crash(0);
+//*/
+
+node.parentNode.replaceChild(
+  _VirtualDom_render(virtualNode, function() {}),
+  node
+);
+
+return {};
+});`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+[
+  [
+    "_VirtualDom_init",
+    {
+      "endIndex": 374,
+      "name": "_VirtualDom_init",
+      "needs": [
+        "F4",
+        "_Debug_crash",
+        "_VirtualDom_render",
+      ],
+      "startIndex": 1,
+    },
+  ],
+]
+`)
+  })
+
+  test('`_VirtualDom_nodeNS`', () => {
+    const chunk = `
+var _VirtualDom_nodeNS = F2(function(namespace, tag)
+{
+  return F2(function(factList, kidList)
+  {
+    for (var kids = [], descendantsCount = 0; kidList.b; kidList = kidList.b) // WHILE_CONS
+    {
+      var kid = kidList.a;
+      descendantsCount += (kid.b || 0);
+      kids.push(kid);
+    }
+    descendantsCount += kids.length;
+
+    return {
+      $: 1,
+      c: tag,
+      d: _VirtualDom_organizeFacts(factList),
+      e: kids,
+      f: namespace,
+      b: descendantsCount
+    };
+  });
+});`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_VirtualDom_nodeNS",
+          {
+            "endIndex": 493,
+            "name": "_VirtualDom_nodeNS",
+            "needs": [
+              "F2",
+              "F2",
+              "_VirtualDom_organizeFacts",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
+  test('Find `_VirtualDom_doc` inside return statement', () => {
+    const chunk = `
+function _VirtualDom_render(vNode, eventNode)
+{
+var tag = vNode.$;
+
+if (tag === 5)
+{
+  return _VirtualDom_render(vNode.k || (vNode.k = vNode.m()), eventNode);
+}
+
+if (tag === 0)
+{
+  return _VirtualDom_doc.createTextNode(vNode.a);
+}
+}`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+    [
+      [
+        "_VirtualDom_render",
+        {
+          "endIndex": 233,
+          "name": "_VirtualDom_render",
+          "needs": [
+            "_VirtualDom_doc",
+          ],
+          "startIndex": 1,
+        },
+      ],
+    ]
+  `)
   })
 })
 
@@ -743,6 +890,177 @@ var $author$project$Static$main = A2(
         `)
   })
 })
+
+
+describe('ESM exports added by the convert script', () => {
+  test('Parse `export const BrowserElement = { init: ... };`', () => {
+    const chunk = `export const BrowserElement = { init: $author$project$BrowserElement$main($elm$json$Json$Decode$int)(0) };`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+        [
+          [
+            "BrowserElement",
+            {
+              "endIndex": 106,
+              "name": "BrowserElement",
+              "needs": [
+                "$author$project$BrowserElement$main",
+                "$elm$json$Json$Decode$int",
+              ],
+              "startIndex": 0,
+            },
+          ],
+        ]
+      `)
+  })
+
+  test('Parse `export const BrowserSandbox = { init: ... };`', () => {
+    const chunk = `
+export const BrowserSandbox = { init: $author$project$BrowserSandbox$main(
+$elm$json$Json$Decode$succeed(0))(0) };`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "BrowserSandbox",
+          {
+            "endIndex": 115,
+            "name": "BrowserSandbox",
+            "needs": [
+              "$author$project$BrowserSandbox$main",
+              "$elm$json$Json$Decode$succeed",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
+  test('Parse `export const Elm = { BrowserElement, BrowserSandbox };`', () => {
+    const chunk = 'export const Elm = { BrowserElement, BrowserSandbox };'
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "Elm",
+          {
+            "endIndex": 54,
+            "name": "Elm",
+            "needs": [
+              "BrowserElement",
+              "BrowserSandbox",
+            ],
+            "startIndex": 0,
+          },
+        ],
+      ]
+    `)
+  })
+
+  test('Parse `export default Elm;`', () => {
+    const chunk = 'export default Elm;'
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "defaultExport",
+          {
+            "endIndex": 19,
+            "name": "defaultExport",
+            "needs": [
+              "Elm",
+            ],
+            "startIndex": 0,
+          },
+        ],
+      ]
+    `)
+  })
+
+
+  test('Named export, default export and `BrowserElement.main`', () => {
+    const chunk = `
+var $author$project$BrowserElement$main = $elm$browser$Browser$element(
+{at: $author$project$BrowserElement$init, az: $author$project$BrowserElement$subscriptions, aB: $author$project$BrowserElement$update, aC: $author$project$BrowserElement$view});
+
+export const BrowserElement = { init: $author$project$BrowserElement$main($elm$json$Json$Decode$int)(0) };
+export const BrowserSandbox = { init: $author$project$BrowserSandbox$main(
+$elm$json$Json$Decode$succeed(0))(0) };
+export const Elm = { BrowserElement, BrowserSandbox };
+export default Elm;
+`
+
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "$author$project$BrowserElement$main",
+          {
+            "endIndex": 250,
+            "name": "$author$project$BrowserElement$main",
+            "needs": [
+              "$elm$browser$Browser$element",
+              "$author$project$BrowserElement$init",
+              "$author$project$BrowserElement$subscriptions",
+              "$author$project$BrowserElement$update",
+              "$author$project$BrowserElement$view",
+            ],
+            "startIndex": 1,
+          },
+        ],
+        [
+          "BrowserElement",
+          {
+            "endIndex": 358,
+            "name": "BrowserElement",
+            "needs": [
+              "$author$project$BrowserElement$main",
+              "$elm$json$Json$Decode$int",
+            ],
+            "startIndex": 252,
+          },
+        ],
+        [
+          "BrowserSandbox",
+          {
+            "endIndex": 473,
+            "name": "BrowserSandbox",
+            "needs": [
+              "$author$project$BrowserSandbox$main",
+              "$elm$json$Json$Decode$succeed",
+            ],
+            "startIndex": 359,
+          },
+        ],
+        [
+          "Elm",
+          {
+            "endIndex": 528,
+            "name": "Elm",
+            "needs": [
+              "BrowserElement",
+              "BrowserSandbox",
+            ],
+            "startIndex": 474,
+          },
+        ],
+        [
+          "defaultExport",
+          {
+            "endIndex": 548,
+            "name": "defaultExport",
+            "needs": [
+              "Elm",
+            ],
+            "startIndex": 529,
+          },
+        ],
+      ]
+    `)
+  })
+})
+
 
 /**
  * 

@@ -81,6 +81,10 @@ export function getDeclarationsAndDependencies(code) {
                     //ignore
                     parsed = null
                     break
+                case 'export_statement': {
+                    parsed = parseExport(cursor.currentNode, newScope())
+                    break
+                }
                 default:
                     logNode(cursor.currentNode)
                     parsed = new Error(`unknown node type '${cursor.nodeType}'`)
@@ -185,12 +189,66 @@ function parseFunctionDeclaration(node, scope) {
         || node.children[3].type !== 'statement_block') {
         return new Error('Invalid shape for a `function_declaration`')
     }
-    return {
-        name: node.children[1].text,
-        needs: findNeeds(node, scope),
-        startIndex: node.startIndex,
-        endIndex: node.endIndex
+    const name = node.children[1].text
+    // Add the function declaration to the current scope
+    // Note: This is not hoisting the declaration as in JS, if it was used before 
+    // it will show up in the list of needed identifiers.
+    scope.declarations.push(name)
+
+    const formalParameters = node.children[2].namedChildren
+        .filter(n => n.type === 'identifier')
+        .map(n => n.text)
+
+    const needs = findNeeds(node.children[3], newScope(scope, formalParameters))
+
+    return { name, needs, startIndex: node.startIndex, endIndex: node.endIndex }
+}
+
+/**
+ * 
+ * @param {SyntaxNode} node with type `function_declaration`
+ * @param {DeclarationsInScope} scope
+ * @returns {ParsedDeclaration|Error}
+ */
+function parseExport(node, scope) {
+    if (node.children[0].type === 'export' && node.children[1].type === 'default') {
+        return {
+            name: 'defaultExport',
+            needs: findNeeds(node.children[2], scope),
+            startIndex: node.startIndex,
+            endIndex: node.endIndex,
+        }
+    } else {
+        return parseNamedExport(node, scope)
     }
+}
+
+/**
+ * 
+ * @param {SyntaxNode} node with type `function_declaration`
+ * @param {DeclarationsInScope} scope
+ * @returns {ParsedDeclaration|Error}
+ */
+function parseNamedExport(node, scope) {
+    if (node.childCount !== 2
+        || node.children[0].type !== 'export'
+        || node.children[1].type !== 'lexical_declaration'
+    ) {
+        console.error(node.toString())
+        console.error(node.children)
+        throw new Error('Unexpected `parseNamedExport` shape')
+    }
+    const [_export, lexicalDeclaration] = node.children
+
+    assert(lexicalDeclaration.children[0].type === 'const')
+    assert(lexicalDeclaration.children[1].type === 'variable_declarator')
+
+    const [identifier, _equals, expression] = lexicalDeclaration.children[1].children
+    assert(identifier.type === 'identifier')
+    const name = identifier.text
+
+    const needs = findNeeds(expression, scope)
+    return { name, needs, startIndex: node.startIndex, endIndex: node.endIndex }
 }
 
 /**
@@ -202,12 +260,9 @@ function parseFunctionDeclaration(node, scope) {
 function findNeeds(node, scope) {
     switch (node.type) {
         case 'function_declaration': {
-            assert(node.children[2].type === 'formal_parameters')
-            assert(node.children[3].type === 'statement_block')
-            const formalParameters = node.children[2].namedChildren
-                .filter(n => n.type === 'identifier')
-                .map(n => n.text)
-            return findNeeds(node.children[3], newScope(scope, formalParameters))
+            const parsed = parseFunctionDeclaration(node, scope)
+            if (parsed instanceof Error) throw parsed
+            return parsed.needs
         }
         case 'function': {
             assert(node.children[1].type === 'formal_parameters')
@@ -215,7 +270,7 @@ function findNeeds(node, scope) {
             const formalParameters = node.children[1].namedChildren
                 .filter(n => n.type === 'identifier')
                 .map(n => n.text)
-            return findNeeds(node.children[2].children[1], newScope(scope, formalParameters))
+            return findNeeds(node.children[2], newScope(scope, formalParameters))
         }
         case 'arguments': {
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
@@ -224,7 +279,6 @@ function findNeeds(node, scope) {
             return findNeeds(node.children[1], scope)
         }
         case 'if_statement': {
-            debugger
             // return findNeeds(node.children[1], scope).concat(findNeeds(node.children[2], scope))
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
         }
@@ -250,26 +304,6 @@ function findNeeds(node, scope) {
                 throw new Error('Unexpected shape of `variable_declarator` node')
             }
             return findNeeds(node.children[2], newScope(scope, [node.children[0].text]))
-        }
-        case 'call_expression': {
-            if (node.childCount !== 2) {
-                throw new Error('Unexpected childCount for a `call_expression`')
-            }
-            switch (node.children[0].type) {
-                case 'member_expression':
-                    return findNeeds(node.children[1], scope)
-                case 'identifier':
-                    // console.warn('call_expression > identifier', node.text, node.children)
-                    return wrapIdentifier(node.children[0].text, scope).concat(findNeeds(node.children[1], scope))
-                case 'call_expression':
-                case 'subscript_expression':
-                case 'function':
-                    return findNeeds(node.children[0], scope)
-                default:
-                    logNode(node.children[0])
-                    // return node.namedChildren.flatMap(n => findNeeds(n, scope))
-                    throw new Error(`Cannot handle call_expression > ${node.children[0].type}`)
-            }
         }
         case 'identifier':
             return wrapIdentifier(node.text, scope)
@@ -299,6 +333,7 @@ function findNeeds(node, scope) {
         case 'pair':
         case 'augmented_assignment_expression':
         case 'assignment_expression':
+        case 'call_expression':
         case 'sequence_expression':
         case 'member_expression':
         case 'do_statement':
@@ -314,13 +349,24 @@ function findNeeds(node, scope) {
         case 'switch_case':
         case 'switch_default':
         case 'throw_statement': {
-            return node.namedChildren.flatMap(n => findNeeds(n, scope))
+            return node.children.flatMap(n => findNeeds(n, scope))
         }
-        case '{':
-        case '}':
-        case ';':
-        case 'true':
-        case 'false':
+        case '{': case '}':
+        case ';': case ':':
+        case '&&': case '||': case '|':
+        case '[': case ']':
+        case '?':
+        case ',':
+        case '.':
+        case '=':
+        case '+=': case '-=':
+        case '++': case '--':
+        case '+': case '-': case '*': case '/': case '%':
+        case '!': case '!=': case '!==':
+        case '==': case '===':
+        case '<': case '>':
+        case '<=': case '>=':
+        case 'true': case 'false':
         case 'null':
         case 'undefined':
         case 'regex':
@@ -328,10 +374,17 @@ function findNeeds(node, scope) {
         case 'continue_statement':
         case 'number':
         case 'string':
-        case 'property_identifier':
-        case 'comment': {
+        case 'do': case 'while': case 'for':
+        case 'new': case 'case': case 'throw':
+        case 'typeof': case 'instanceof':
+        case 'in':
+        case 'default':
+        case 'comment':
+        case 'property_identifier': {
             return []
         }
+        case 'shorthand_property_identifier':
+            return [node.text]
         case 'template_string':
         // unused by Elm
         default:
@@ -491,13 +544,16 @@ function findNeedsInStatementBlock(node, parentScope) {
  * @returns {boolean}
  */
 function isDeclaredInScope(identifier, scope) {
-    // console.log('isDeclaredInScope(', inspect({ identifier, scope }, false, 4))
     if (scope.declarations.includes(identifier)) return true
     if (scope.parentScope) return isDeclaredInScope(identifier, scope.parentScope)
     switch (identifier) {
         case 'Array':
+        case 'console':
         case 'document':
+        case 'DataView':
         case 'Error':
+        case 'File':
+        case 'FileList':
         case 'Object':
         case 'Math':
         case 'String':
