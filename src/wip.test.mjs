@@ -29,6 +29,17 @@ test('compile BrowserElement.elm', async () => {
     `)
 })
 
+test('compile BrowserApplication.elm', async () => {
+    const result = await wipAnalyze('example/compiled/BrowserApplication.debug.js')
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "esmByteSize": 81368,
+        "esmChars": 81368,
+        "iifeByteSize": 280011,
+        "iifeChars": 279991,
+      }
+    `)
+})
 
 test.skip('template', () => {
     const chunk = ``

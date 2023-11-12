@@ -77,6 +77,7 @@ export function getDeclarationsAndDependencies(code) {
                 case 'expression_statement':
                 // so far only 
                 // `console.warn('Compiled in DEV mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');`
+                case 'empty_statement':
                 case 'comment':
                     //ignore
                     parsed = null
@@ -265,12 +266,7 @@ function findNeeds(node, scope) {
             return parsed.needs
         }
         case 'function': {
-            assert(node.children[1].type === 'formal_parameters')
-            assert(node.children[2].type === 'statement_block')
-            const formalParameters = node.children[1].namedChildren
-                .filter(n => n.type === 'identifier')
-                .map(n => n.text)
-            return findNeeds(node.children[2], newScope(scope, formalParameters))
+            return findNeedsInFunction(node, scope)
         }
         case 'arguments': {
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
@@ -353,7 +349,8 @@ function findNeeds(node, scope) {
         }
         case '{': case '}':
         case ';': case ':':
-        case '&&': case '||': case '|':
+        case '&': case '|': case '^': case '~': case '<<': case '>>': case '>>>':
+        case '&&': case '||':
         case '[': case ']':
         case '?':
         case ',':
@@ -372,6 +369,7 @@ function findNeeds(node, scope) {
         case 'regex':
         case 'break_statement':
         case 'continue_statement':
+        case 'empty_statement':
         case 'number':
         case 'string':
         case 'do': case 'while': case 'for':
@@ -419,6 +417,34 @@ function wrapIdentifier(identifier, scope) {
  * @prop {Array<string>} declarations
  * @prop {boolean} isFunctionScope
  */
+
+/**
+ * 
+ * @param {SyntaxNode} node with type `for_statement`
+ * @param {DeclarationsInScope} parentScope
+ * @returns {Array<string>}
+ */
+function findNeedsInFunction(node, parentScope) {
+    let [_, identifier, formalParameters, statementBlock] = node.children
+    switch (identifier.type) {
+        case 'identifier':
+            insertVariableDeclarationIntoScope(identifier.text, parentScope)
+            break
+        case 'formal_parameters':
+            statementBlock = formalParameters
+            formalParameters = identifier
+            break
+        default:
+            throw new Error(`Unexpected first child of function '${identifier.type}'`)
+    }
+
+    const params = formalParameters.namedChildren
+        .filter(n => n.type === 'identifier')
+        .map(n => n.text)
+    const scope = newScope(parentScope, params)
+    scope.isFunctionScope = true
+    return findNeeds(statementBlock, scope)
+}
 
 /**
  * 
@@ -558,6 +584,7 @@ function isDeclaredInScope(identifier, scope) {
         case 'Error':
         case 'File':
         case 'FileList':
+        case 'history':
         case 'isFinite':
         case 'isNaN':
         case 'JSON':
