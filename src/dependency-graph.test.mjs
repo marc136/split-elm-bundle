@@ -81,6 +81,41 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
     `)
   })
 
+  test('Variable declarations are scoped to function scope', () => {
+    const chunk = `
+function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
+{
+    var index = rootIndex;
+    var yNext = 1;
+    if (yNext)
+    {
+        var yNextNode = yNext.b;
+    }
+
+    // swap x and y
+    if (true)
+    {
+        _VirtualDom_diffHelp(yNextNode, index);
+    }
+}`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_VirtualDom_diffKeyedKids",
+          {
+            "endIndex": 278,
+            "name": "_VirtualDom_diffKeyedKids",
+            "needs": [
+              "_VirtualDom_diffHelp",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
   test('Function declaration with a simple call expression', () => {
     const chunk = `
 function _VirtualDom_appendChild(parent, child)
@@ -154,6 +189,7 @@ function F4(fun) {
     const chunk = `
 function _VirtualDom_makeCallback(eventNode, initialHandler)
 {
+  console.log(callback)
   function callback(event)
   {
       var handler = callback.q;
@@ -170,7 +206,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
   [
     "_VirtualDom_makeCallback",
     {
-      "endIndex": 197,
+      "endIndex": 221,
       "name": "_VirtualDom_makeCallback",
       "needs": [],
       "startIndex": 1,

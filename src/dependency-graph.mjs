@@ -158,7 +158,7 @@ function parseVariableDeclarations(node, scope) {
                 const [identifier, _equals, expression] = cursor.currentNode.children
                 assert(identifier.type === 'identifier')
                 result.names.push(identifier.text)
-                scope.declarations.push(identifier.text)
+                insertVariableDeclarationIntoScope(identifier.text, scope)
                 if (expression) {
                     result.needs = result.needs.concat(findNeeds(expression, scope))
                 }
@@ -178,10 +178,10 @@ function parseVariableDeclarations(node, scope) {
 /**
  * 
  * @param {SyntaxNode} node with type `function_declaration`
- * @param {DeclarationsInScope} scope
+ * @param {DeclarationsInScope} parentScope
  * @returns {ParsedDeclaration|Error}
  */
-function parseFunctionDeclaration(node, scope) {
+function parseFunctionDeclaration(node, parentScope) {
     if (node.childCount !== 4
         || node.children[0].type !== 'function'
         || node.children[1].type !== 'identifier'
@@ -193,14 +193,14 @@ function parseFunctionDeclaration(node, scope) {
     // Add the function declaration to the current scope
     // Note: This is not hoisting the declaration as in JS, if it was used before 
     // it will show up in the list of needed identifiers.
-    scope.declarations.push(name)
+    parentScope.declarations.push(name)
 
     const formalParameters = node.children[2].namedChildren
         .filter(n => n.type === 'identifier')
         .map(n => n.text)
-
-    const needs = findNeeds(node.children[3], newScope(scope, formalParameters))
-
+    const scope = newScope(parentScope, formalParameters)
+    scope.isFunctionScope = true
+    const needs = findNeeds(node.children[3], scope)
     return { name, needs, startIndex: node.startIndex, endIndex: node.endIndex }
 }
 
@@ -401,7 +401,7 @@ function findNeeds(node, scope) {
  * @returns {DeclarationsInScope}
  */
 function newScope(parentScope = undefined, declarations = []) {
-    return { parentScope, declarations }
+    return { parentScope, declarations, isFunctionScope: false }
 }
 
 /**
@@ -417,6 +417,7 @@ function wrapIdentifier(identifier, scope) {
  * @typedef DeclarationsInScope
  * @prop {DeclarationsInScope|undefined} parentScope
  * @prop {Array<string>} declarations
+ * @prop {boolean} isFunctionScope
  */
 
 /**
@@ -535,6 +536,8 @@ function findNeedsInStatementBlock(node, parentScope) {
     } while (cursor.gotoNextSibling())
 
     return needs.flat()
+        // fake hoisting of variable declarations by dropping needs that are in scope
+        .filter(need => !scope.declarations.includes(need))
 }
 
 /**
@@ -568,6 +571,18 @@ function isDeclaredInScope(identifier, scope) {
         default:
             return false
     }
+}
+
+/**
+ * Variable declarations are scoped to functions or global context.
+ * This function finds the correct scope in the chain upwards.
+ * @param {string} identifier 
+ * @param {DeclarationsInScope} scope 
+ */
+function insertVariableDeclarationIntoScope(identifier, scope) {
+    if (scope.isFunctionScope || typeof scope.parentScope === 'undefined') {
+        scope.declarations.push(identifier)
+    } else return insertVariableDeclarationIntoScope(identifier, scope.parentScope)
 }
 
 /**
