@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Converts Elm IIFE to ESM and extracts programs > Should find expected Elm programs 1`] = `
+[
+  [
+    "BrowserElement",
+    [
+      "$author$project$BrowserElement$main",
+      "$elm$json$Json$Decode$int",
+    ],
+  ],
+  [
+    "BrowserSandbox",
+    [
+      "$author$project$BrowserSandbox$main",
+      "$elm$json$Json$Decode$succeed",
+    ],
+  ],
+]
+`;

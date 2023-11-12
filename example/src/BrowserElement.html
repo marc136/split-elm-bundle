@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+        <title>HMR with BrowserElement</title>
+    </head>
+
+    <body>
+        <main id="elm"></main>
+        <script type="module">
+            const flags = 1
+            const node = document.querySelector('main#elm')
+
+            import { Elm } from './BrowserElement.elm'
+            const elm = Elm.BrowserElement.init({ flags, node })
+            console.warn('Browser.Element', elm)
+            elm.ports.outgoing.subscribe(() => {
+                console.log('JS received an `outgoing` port message and will answer to `incoming`')
+                elm.ports.incoming.send(1)
+            })
+        </script>
+    </body>
+</html>

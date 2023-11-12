@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+        <title>HMR with BrowserSandbox</title>
+    </head>
+
+    <body>
+        <main id="elm"></main>
+        <script type="module">
+            const flags = {}
+            const node = document.querySelector('main#elm')
+
+            import { BrowserSandbox } from './BrowserSandbox.elm'
+            const elm = BrowserSandbox.init({ flags, node })
+            window.elm = elm
+        </script>
+    </body>
+</html>
