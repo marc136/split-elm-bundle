@@ -50,12 +50,12 @@ export function getDeclarationsAndDependencies(code) {
 
     try {
 
-        /** @type {ParsedDeclaration|Error|null} */
+        /** @type {ParsedDeclaration|ParsedDeclarations|Error|null} */
         let parsed = null
         do {
             switch (cursor.nodeType) {
                 case 'variable_declaration':
-                    parsed = parseVariableDeclaration(cursor.currentNode, emptyScope())
+                    parsed = parseVariableDeclarations(cursor.currentNode, emptyScope())
                     break
                 case 'function_declaration':
                     parsed = parseFunctionDeclaration(cursor.currentNode, emptyScope())
@@ -76,7 +76,17 @@ export function getDeclarationsAndDependencies(code) {
                 throw parsed
             }
             if (parsed) {
-                result.set(parsed.name, parsed)
+                if ("names" in parsed) {
+                    for (const name of parsed.names) {
+                        result.set(name, {
+                            name, needs: parsed.needs,
+                            startIndex: parsed.startIndex, endIndex: parsed.endIndex,
+                        })
+                    }
+                }
+                if ("name" in parsed) {
+                    result.set(parsed.name, parsed)
+                }
             }
         } while (cursor.gotoNextSibling())
 
@@ -97,40 +107,55 @@ export function getDeclarationsAndDependencies(code) {
  */
 
 /**
+ * @typedef ParsedDeclarations
+ * @prop {Array<string>} names
+ * @prop {number} startIndex
+ * @prop {number} endIndex
+ * @prop {Array<string>} needs
+ */
+
+/**
  * 
  * @param {SyntaxNode} node a `VariableDeclarationNode` with type `variable_declaration` 
  * @param {DeclarationsInScope} scope
- * @returns {ParsedDeclaration|Error}
+ * @returns {ParsedDeclarations|Error}
  */
-function parseVariableDeclaration(node, scope) {
-    if (node.childCount !== 3) {
-        return new Error(`Expected a childCount of 3, but got ${node.childCount}`)
-    }
-    const variableDeclaratorNode = node.children[1]
-    if (variableDeclaratorNode.type !== 'variable_declarator') {
-        return new Error(`Expected VariableDeclarationNode to contain a VariableDeclaratorNode`)
-    }
-    /** @type ParsedDeclaration */
+function parseVariableDeclarations(node, scope) {
+    const cursor = node.walk()
+    cursor.gotoFirstChild()
+
+    /** @type ParsedDeclarations */
     const result = {
-        name: variableDeclaratorNode.children[0].text,
+        names: [],
         needs: [],
         startIndex: node.startIndex,
         endIndex: node.endIndex,
     }
-    if (variableDeclaratorNode.childCount === 1) {
-        // empty declaration like `var a;`
-        return result
-    }
-    const [identifier, equals, expression] = variableDeclaratorNode.children
-    if (variableDeclaratorNode.childCount === 3
-        && identifier.type === 'identifier'
-        && equals.type === '=') {
-        // TODO rather use a cursor?
-        result.needs = findNeeds(expression, scope)
-        return result
-    }
-    logNode(variableDeclaratorNode)
-    return new Error('todo')
+
+    do {
+        switch (cursor.nodeType) {
+            case 'var':
+                break
+            case 'variable_declarator': {
+                const [identifier, _equals, expression] = cursor.currentNode.children
+                assert(identifier.type === 'identifier')
+                result.names.push(identifier.text)
+                scope.declarations.push(identifier.text)
+                if (expression) {
+                    // console.log(`findNeeds(expression, scope)`, expression.text)
+                    result.needs = result.needs.concat(findNeeds(expression, scope))
+                }
+                break
+            }
+            case ',':
+            case ';':
+                break
+            default:
+                logNode(cursor.currentNode)
+                return new Error(`TODO parseVariableDeclaration('${cursor.nodeType}')`)
+        }
+    } while (cursor.gotoNextSibling())
+    return result
 }
 
 /**
@@ -217,11 +242,11 @@ function findNeeds(node, scope) {
             return findNeedsInForStatement(node, scope)
         }
         case 'variable_declaration': {
-            const result = parseVariableDeclaration(node, scope)
+            const result = parseVariableDeclarations(node, scope)
             if (result instanceof Error) {
                 throw result
             } else {
-                scope.declarations.push(result.name)
+                scope.declarations.push(...result.names)
                 return result.needs
             }
         }
@@ -332,12 +357,12 @@ function findNeedsInForStatement(node, parentScope) {
             case '(':
                 break
             case 'variable_declaration':
-                const newVar = parseVariableDeclaration(cursor.currentNode, parentScope)
+                const newVar = parseVariableDeclarations(cursor.currentNode, parentScope)
                 if (!newVar) throw new Error(`Could not parse variable declaration '${cursor.currentNode.text}'`)
                 if (newVar instanceof Error) {
                     throw newVar
                 }
-                scope.declarations.push(newVar.name)
+                scope.declarations.push(...newVar.names)
                 needs.push(newVar.needs)
                 break
             case 'expression_statement':
@@ -382,14 +407,14 @@ function findNeedsInStatementBlock(node, parentScope) {
     const needs = []
 
     do {
-        /** @type ParsedDeclaration|Error|null */
+        /** @type ParsedDeclarations|ParsedDeclaration|Error|null */
         let parsed = null
         switch (cursor.nodeType) {
             case '{':
             case '}':
                 break
             case 'variable_declaration':
-                parsed = parseVariableDeclaration(cursor.currentNode, scope)
+                parsed = parseVariableDeclarations(cursor.currentNode, scope)
                 break
             case 'function_declaration':
                 parsed = parseFunctionDeclaration(cursor.currentNode, scope)
@@ -419,7 +444,12 @@ function findNeedsInStatementBlock(node, parentScope) {
             throw parsed
         }
         if (parsed) {
-            scope.declarations.push(parsed.name)
+            if ("names" in parsed) {
+                scope.declarations.push(...parsed.names)
+            }
+            if ("name" in parsed) {
+                scope.declarations.push(parsed.name)
+            }
             needs.push(parsed.needs)
         }
     } while (cursor.gotoNextSibling())

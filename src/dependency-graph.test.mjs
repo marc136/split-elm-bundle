@@ -287,6 +287,63 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
       ]
     `)
     })
+
+    test('Parses many `variable_delarator`s in one `variable_declaration`', () => {
+        const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+          [
+            [
+              "a",
+              {
+                "endIndex": 47,
+                "name": "a",
+                "needs": [
+                  "c",
+                  "globalVariable",
+                ],
+                "startIndex": 0,
+              },
+            ],
+            [
+              "b",
+              {
+                "endIndex": 47,
+                "name": "b",
+                "needs": [
+                  "c",
+                  "globalVariable",
+                ],
+                "startIndex": 0,
+              },
+            ],
+            [
+              "d",
+              {
+                "endIndex": 47,
+                "name": "d",
+                "needs": [
+                  "c",
+                  "globalVariable",
+                ],
+                "startIndex": 0,
+              },
+            ],
+            [
+              "e",
+              {
+                "endIndex": 47,
+                "name": "e",
+                "needs": [
+                  "c",
+                  "globalVariable",
+                ],
+                "startIndex": 0,
+              },
+            ],
+          ]
+        `)
+    })
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {
