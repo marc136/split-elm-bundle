@@ -149,6 +149,19 @@ function F4(fun) {
     })
 })
 
+test.only('get dependencies of browser sandbox main', () => {
+    const chunk = `
+var $author$project$BrowserSandbox$main = $elm$browser$Browser$sandbox(
+	{init: $author$project$BrowserSandbox$init, update: $author$project$BrowserSandbox$update, view: $author$project$BrowserSandbox$view});
+`
+
+    const map = getDeclarationsAndDependencies(chunk)
+    const expected = ['$elm$browser$Browser$sandbox']
+    const actual = getDependenciesOf('$author$project$BrowserSandbox$main', map)
+    expect(actual).toMatchObject(expected)
+})
+
+
 /**
  * 
  * @typedef {import('tree-sitter').SyntaxNode} SyntaxNode

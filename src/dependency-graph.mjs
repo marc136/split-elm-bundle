@@ -10,6 +10,19 @@ import { jsParser } from './js-parser.mjs';
  * @typedef {Map<string, ParsedDeclaration>} DependencyMap
  */
 
+
+/**
+ * @param {string} identifier
+ * @param {DependencyMap} map 
+ * @returns {Array<string>}
+ */
+export function getDependenciesOf(identifier, map) {
+    const direct = map.get(identifier)
+    if (!direct) throw new Error(`Unknown identifier '${identifier}'`)
+    // TODO recurse
+    return direct.needs
+}
+
 /**
  *  
  * @param {string} code 
