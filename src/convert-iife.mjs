@@ -3,6 +3,10 @@ import path from 'node:path';
 import { jsParser } from './js-parser.mjs';
 
 /**
+ * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
+ */
+
+/**
  * @param {import("fs").PathLike | fs.FileHandle} input
  * @param {import("fs").PathLike | fs.FileHandle} output
  */
@@ -15,7 +19,7 @@ export async function convertFile(input, output) {
 /**
  * 
  * @param {string} iife compiled Elm js file
- * @returns {{esm: string, programNodes: Array<{ name: string, init: Parser.SyntaxNode }>}}
+ * @returns {{esm: string, programNodes: Array<{ name: string, init: SyntaxNode }>}}
  */
 export function convert(iife) {
     // `function F` is always exported first by the compiler
@@ -42,7 +46,7 @@ export function convert(iife) {
 /**
  * 
  * @param {string} code 
- * @returns {Array<{ name: string, init: Parser.SyntaxNode }>}
+ * @returns {Array<{ name: string, init: SyntaxNode }>}
  */
 function parsePlatformExport(code) {
     const tree = jsParser.parse(code)
@@ -59,9 +63,9 @@ function parsePlatformExport(code) {
 
 /**
  * 
- * @param {Parser.SyntaxNode} key 
- * @param {Parser.SyntaxNode} value 
- * @returns {{ name: string, init: Parser.SyntaxNode }}
+ * @param {SyntaxNode} key 
+ * @param {SyntaxNode} value 
+ * @returns {{ name: string, init: SyntaxNode }}
  */
 function parseProgramPair(key, value) {
     const name = getKeyOfObject(key)
@@ -87,7 +91,7 @@ function parseProgramPair(key, value) {
 
 /**
  * 
- * @param {Parser.SyntaxNode} node an `ObjectNode` with type `object` 
+ * @param {SyntaxNode} node an `ObjectNode` with type `object` 
  * @returns {string|Error}
  */
 function getKeyOfObject(node) {
