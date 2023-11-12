@@ -213,6 +213,9 @@ function findNeeds(node, scope) {
                     case 'true':
                     case 'false':
                     case 'regex':
+                    case 'null':
+                    case 'undefined':
+                    case 'comment':
                         return []
                     case 'function':
                     case 'object':
@@ -250,7 +253,6 @@ function findNeeds(node, scope) {
             if (result instanceof Error) {
                 throw result
             } else {
-                scope.declarations.push(...result.names)
                 return result.needs
             }
         }
@@ -299,6 +301,7 @@ function findNeeds(node, scope) {
         case 'object':
         case 'array':
         case 'pair':
+        case 'augmented_assignment_expression':
         case 'assignment_expression':
         case 'sequence_expression':
         case 'member_expression':
@@ -319,9 +322,11 @@ function findNeeds(node, scope) {
         }
         case '{':
         case '}':
+        case ';':
         case 'true':
         case 'false':
         case 'null':
+        case 'undefined':
         case 'number':
         case 'string':
         case 'property_identifier':
@@ -500,6 +505,7 @@ function findNeedsInStatementBlock(node, parentScope) {
             case 'for_in_statement':
                 needs.push(findNeedsInForInStatement(cursor.currentNode, scope))
                 break
+            case 'switch_statement':
             case 'do_statement':
             case 'while_statement':
             case 'try_statement':
@@ -549,6 +555,8 @@ function isDeclaredInScope(identifier, scope) {
         case 'document':
         case 'Array':
         case 'Error':
+        case 'String':
+        case 'Math':
             return true
         default:
             return false

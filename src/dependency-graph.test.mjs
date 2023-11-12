@@ -5,10 +5,10 @@ import { jsParser } from './js-parser.mjs';
 import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs';
 
 describe('parse short chunks', () => {
-    test('Empty variable declaration', () => {
-        const chunk = 'var _VirtualDom_divertHrefToApp;'
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+  test('Empty variable declaration', () => {
+    const chunk = 'var _VirtualDom_divertHrefToApp;'
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_divertHrefToApp",
@@ -21,12 +21,12 @@ describe('parse short chunks', () => {
             ],
           ]
         `)
-    })
+  })
 
-    test('Variable declaration with ternary expression', () => {
-        const chunk = `var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+  test('Variable declaration with ternary expression', () => {
+    const chunk = `var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_doc",
@@ -39,10 +39,10 @@ describe('parse short chunks', () => {
             ],
           ]
         `)
-    })
+  })
 
-    test('Variable declaration with nested function call and declaration', () => {
-        const chunk = `
+  test('Variable declaration with nested function call and declaration', () => {
+    const chunk = `
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
 	// NOTE: this function needs _Platform_export available to work
@@ -61,8 +61,8 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
 
 	return {};
 });`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_init",
@@ -77,16 +77,16 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
             ],
           ]
         `)
-    })
+  })
 
-    test('Function declaration with a simple call expression', () => {
-        const chunk = `
+  test('Function declaration with a simple call expression', () => {
+    const chunk = `
 function _VirtualDom_appendChild(parent, child)
 {
     parent.appendChild(child);
 }`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_appendChild",
@@ -99,14 +99,14 @@ function _VirtualDom_appendChild(parent, child)
             ],
           ]
         `)
-    })
+  })
 
-    test('Function declaration for curried `F2`', () => {
-        const chunk = `function F2(fun) {
+  test('Function declaration for curried `F2`', () => {
+    const chunk = `function F2(fun) {
   return F(2, fun, function(a) { return function(b) { return fun(a,b); }; })
 }`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "F2",
@@ -121,17 +121,17 @@ function _VirtualDom_appendChild(parent, child)
             ],
           ]
         `)
-    })
+  })
 
-    test('Function declaration returning multiple nested functions', () => {
-        const chunk = `
+  test('Function declaration returning multiple nested functions', () => {
+    const chunk = `
 function F4(fun) {
   return F(4, fun, function(a) { return function(b) { return function(c) {
     return function(d) { return fun(a, b, c, d); }; }; };
   });
 }`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "F4",
@@ -146,10 +146,10 @@ function F4(fun) {
             ],
           ]
         `)
-    })
+  })
 
-    test('static html rendering', () => {
-        const chunk = `
+  test('static html rendering', () => {
+    const chunk = `
 var $author$project$Static$main = A2(
     $elm$html$Html$div,
     _List_fromArray(
@@ -160,8 +160,8 @@ var $author$project$Static$main = A2(
         [
             $elm$html$Html$text('Static')
         ]));`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "$author$project$Static$main",
@@ -181,10 +181,10 @@ var $author$project$Static$main = A2(
             ],
           ]
         `)
-    })
+  })
 
-    test('Understands `update_expression` in for loop', () => {
-        const chunk = `
+  test('Understands `update_expression` in for loop', () => {
+    const chunk = `
 var _JsArray_foldr = F3(function(func, acc, array)
 {
     for (var i = array.length - 1; i >= 0; i--)
@@ -195,8 +195,8 @@ var _JsArray_foldr = F3(function(func, acc, array)
     return acc;
 });
 `
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_JsArray_foldr",
@@ -212,17 +212,17 @@ var _JsArray_foldr = F3(function(func, acc, array)
         ],
       ]
     `)
-    })
+  })
 
-    test('throw an Error', () => {
-        const chunk = `
+  test('throw an Error', () => {
+    const chunk = `
     function _Debug_crash_UNUSED(identifier)
     {
             throw new Error(baseUrl + '/elm/core/blob/1.0.0/hints/' + identifier + '.md');
     }
     `
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_Debug_crash_UNUSED",
@@ -237,10 +237,10 @@ var _JsArray_foldr = F3(function(func, acc, array)
             ],
           ]
         `)
-    })
+  })
 
-    test('Handles `switch_statement` and variables it introduces in the scope', () => {
-        const chunk = `
+  test('Handles `switch_statement` and variables it introduces in the scope', () => {
+    const chunk = `
 function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
 {
     switch(identifier)
@@ -270,8 +270,8 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
     }
 }
 `
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Debug_crash",
@@ -286,12 +286,12 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
         ],
       ]
     `)
-    })
+  })
 
-    test('Parses many `variable_delarator`s in one `variable_declaration`', () => {
-        const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+  test('Parses many `variable_delarator`s in one `variable_declaration`', () => {
+    const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
           [
             [
               "a",
@@ -343,10 +343,10 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
             ],
           ]
         `)
-    })
+  })
 
-    test('Support `assignment_expression` inside `for_statement`', () => {
-        const chunk = `
+  test('Support `assignment_expression` inside `for_statement`', () => {
+    const chunk = `
 function _Utils_eq(x, y)
 {
         for (
@@ -359,8 +359,8 @@ function _Utils_eq(x, y)
         return isEqual;
 }
 `
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Utils_eq",
@@ -376,10 +376,10 @@ function _Utils_eq(x, y)
         ],
       ]
     `)
-    })
+  })
 
-    test('Support `for_in_statement`', () => {
-        const chunk = `
+  test('Support `for_in_statement`', () => {
+    const chunk = `
 function abc() {
     for (var one in x) {
         console.log(one)
@@ -393,8 +393,8 @@ function abc() {
 }
 
 `
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
       [
         [
           "abc",
@@ -410,17 +410,17 @@ function abc() {
         ],
       ]
     `)
-    })
+  })
 
-    test('Support `sequence_expression` inside `for_statement`', () => {
-        const chunk = `
+  test('Support `sequence_expression` inside `for_statement`', () => {
+    const chunk = `
 function _Utils_cmp(x,y,ord) 
 {
     for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); fake = global1, x = x.b, y = global2) {} // WHILE_CONSES
 }
 `
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Utils_cmp",
@@ -438,10 +438,10 @@ function _Utils_cmp(x,y,ord)
         ],
       ]
     `)
-    })
+  })
 
-    test('Support `while` and `do...while` loops', () => {
-        const chunk = `
+  test('Support `while` and `do...while` loops', () => {
+    const chunk = `
 function _String_reverse(str)
 {
         var len = str.length;
@@ -469,8 +469,8 @@ function _String_reverse(str)
         } while (global3)
         return arr.join('');
 }`
-        const actual = Array.from(getDeclarationsAndDependencies(chunk))
-        expect(actual).toMatchInlineSnapshot(`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_String_reverse",
@@ -487,11 +487,47 @@ function _String_reverse(str)
         ],
       ]
     `)
-    })
+  })
+
+  test('Support `augmented_assignment_expression`', () => {
+    const chunk = `
+function _Char_fromCode(code)
+{
+        return _Utils_chr(
+                (code < 0 || 0x10FFFF < code)
+                        ? '\uFFFD'
+                        :
+                (code <= 0xFFFF)
+                        ? String.fromCharCode(code)
+                        :
+                (code -= 0x10000,
+                        String.fromCharCode(Math.floor(code / 0x400) + 0xD800, code % 0x400 + 0xDC00)
+                )
+        );
+}
+`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_Char_fromCode",
+          {
+            "endIndex": 439,
+            "name": "_Char_fromCode",
+            "needs": [
+              "_Utils_chr",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {
-    const chunk = `
+  const chunk = `
 var $elm$html$Html$div;
 var $elm$html$Html$Attributes$id;
 var $elm$html$Html$text;
@@ -526,16 +562,16 @@ var $author$project$Static$main = A2(
             $elm$html$Html$text('Static')
         ]));
     `
-    const map = getDeclarationsAndDependencies(chunk)
+  const map = getDeclarationsAndDependencies(chunk)
 
-    test('For `_List_fromArray`', () => {
-        const actual = getDependenciesOf('_List_fromArray', map)
-        expect(actual).toMatchObject(new Set(['_List_Nil', '_List_Cons']))
-    })
+  test('For `_List_fromArray`', () => {
+    const actual = getDependenciesOf('_List_fromArray', map)
+    expect(actual).toMatchObject(new Set(['_List_Nil', '_List_Cons']))
+  })
 
-    test('For $author$project$Static$main', () => {
-        const actual = getDependenciesOf('$author$project$Static$main', map)
-        expect(actual).toMatchInlineSnapshot(`
+  test('For $author$project$Static$main', () => {
+    const actual = getDependenciesOf('$author$project$Static$main', map)
+    expect(actual).toMatchInlineSnapshot(`
           Set {
             "A2",
             "$elm$html$Html$div",
@@ -546,7 +582,7 @@ var $author$project$Static$main = A2(
             "_List_Cons",
           }
         `)
-    })
+  })
 })
 
 /**
@@ -557,5 +593,5 @@ var $author$project$Static$main = A2(
  * @returns {Array<SyntaxNode>} where every `.type` === 'identifier'
  */
 function getAllIdentifiers(node) {
-    return node.descendantsOfType('identifier')
+  return node.descendantsOfType('identifier')
 }
