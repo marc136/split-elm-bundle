@@ -184,36 +184,46 @@ function findNeeds(node, scope) {
                 switch (n.type) {
                     case 'identifier':
                         return wrapIdentifier(n.text, scope)
-                    case 'function':
-                        return findNeeds(n, scope)
                     case 'number':
-                        // case 'string':
+                    case 'true':
+                    case 'false':
+                    case 'regex':
                         return []
+                    case 'function':
                     case 'object':
-                        return findNeeds(n, scope)
+                    case 'unary_expression':
+                    case 'binary_expression':
+                    case 'ternary_expression':
                     case 'call_expression':
-                        return findNeeds(n, scope)
                     case 'subscript_expression':
-                        return findNeeds(n, scope)
                     case 'array':
                     case 'string':
                         return findNeeds(n, scope)
                     default:
-                        console.log('argumentsnode -> check parent')
-                        logNode(node.parent ?? node)
-                        logNode(node)
+                        console.log('argumentsnode -> check parent if in doubt')
+                        logNode(n)
+                        console.log(n.toString())
                         throw new Error(`Unexpected arguments named child type ${n.type}`)
                 }
             })
+        }
+        case 'parenthesized_expression': {
+            return findNeeds(node.children[1], scope)
+        }
+        case 'if_statement': {
+            return findNeeds(node.children[1], scope).concat(findNeeds(node.children[2], scope))
         }
         case 'for_statement': {
             return findNeedsInForStatement(node, scope)
         }
         case 'variable_declaration': {
-            if (node.childCount !== 3 || node.children[1].type !== 'variable_declarator') {
-                throw new Error('Unexpected shape of `variable_declaration` node')
+            const result = parseVariableDeclaration(node, scope)
+            if (result instanceof Error) {
+                throw result
+            } else {
+                scope.declarations.push(result.name)
+                return result.needs
             }
-            return findNeeds(node.children[1], scope)
         }
         case 'variable_declarator': {
             if (node.childCount !== 3 || node.children[0].type !== 'identifier') {
@@ -247,6 +257,13 @@ function findNeeds(node, scope) {
         case 'statement_block': {
             return findNeedsInStatementBlock(node, scope)
         }
+        case 'switch_statement': {
+            assert(node.children[1].type === 'parenthesized_expression')
+            assert(node.children[2].type === 'switch_body')
+            return findNeeds(node.children[1], scope).concat(
+                findNeeds(node.children[2], { parentScope: scope, declarations: [] })
+            )
+        }
         case 'object':
         case 'array':
         case 'pair':
@@ -254,10 +271,15 @@ function findNeeds(node, scope) {
         case 'member_expression':
         case 'expression_statement':
         case 'update_expression':
+        case 'new_expression':
         case 'subscript_expression':
         case 'unary_expression':
         case 'binary_expression':
-        case 'ternary_expression': {
+        case 'ternary_expression':
+        case 'switch_body':
+        case 'switch_case':
+        case 'switch_default':
+        case 'throw_statement': {
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
         }
         case 'number':
@@ -270,7 +292,7 @@ function findNeeds(node, scope) {
         // unused by Elm
         default:
             logNode(node)
-            throw new Error('todo')
+            throw new Error(`todo findNeeds('${node.type}')`)
     }
 }
 
@@ -319,6 +341,7 @@ function findNeedsInForStatement(node, parentScope) {
                 needs.push(newVar.needs)
                 break
             case 'expression_statement':
+            case 'update_expression':
                 needs.push(findNeeds(cursor.currentNode, scope))
                 break
             case ')':
@@ -371,10 +394,17 @@ function findNeedsInStatementBlock(node, parentScope) {
             case 'function_declaration':
                 parsed = parseFunctionDeclaration(cursor.currentNode, scope)
                 break
+            case 'if_statement':
+                needs.push(findNeeds(node.children[1], scope))
+                needs.push(findNeeds(node.children[2], scope))
+                break
             case 'for_statement':
                 needs.push(findNeedsInForStatement(cursor.currentNode, scope))
                 break
             case 'return_statement':
+                needs.push(findNeeds(cursor.currentNode, scope))
+                break
+            case 'expression_statement':
                 needs.push(findNeeds(cursor.currentNode, scope))
                 break
             case 'comment':
@@ -416,6 +446,8 @@ function isDeclaredInScope(identifier, scope) {
     switch (identifier) {
         case 'window':
         case 'document':
+        case 'Array':
+        case 'Error':
             return true
         default:
             return false

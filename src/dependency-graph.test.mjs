@@ -147,6 +147,7 @@ function F4(fun) {
           ]
         `)
     })
+
     test('static html rendering', () => {
         const chunk = `
 var $author$project$Static$main = A2(
@@ -180,6 +181,111 @@ var $author$project$Static$main = A2(
             ],
           ]
         `)
+    })
+
+    test('Understands `update_expression` in for loop', () => {
+        const chunk = `
+var _JsArray_foldr = F3(function(func, acc, array)
+{
+    for (var i = array.length - 1; i >= 0; i--)
+    {
+        acc = A2(func, array[i], acc);
+    }
+
+    return acc;
+});
+`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_JsArray_foldr",
+          {
+            "endIndex": 173,
+            "name": "_JsArray_foldr",
+            "needs": [
+              "F3",
+              "A2",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+    })
+
+    test('throw an Error', () => {
+        const chunk = `
+    function _Debug_crash_UNUSED(identifier)
+    {
+            throw new Error(baseUrl + '/elm/core/blob/1.0.0/hints/' + identifier + '.md');
+    }
+    `
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+          [
+            [
+              "_Debug_crash_UNUSED",
+              {
+                "endIndex": 148,
+                "name": "_Debug_crash_UNUSED",
+                "needs": [
+                  "baseUrl",
+                ],
+                "startIndex": 5,
+              },
+            ],
+          ]
+        `)
+    })
+
+    test('Handles `switch_statement` and variables it introduces in the scope', () => {
+        const chunk = `
+function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
+{
+    switch(identifier)
+    {
+            case 0:
+                    throw new Error('What node should I take over? In JavaScript I need something like:\n\n    Elm.Main.init({\n        node: document.getElementById("elm-node")\n    })\n\nYou need to do this with any Browser.sandbox or Browser.element program.');
+
+            case 4:
+                    var portName = fact1;
+                    var problem = fact2;
+                    throw new Error('Trying to send an unexpected type of value through port \`' + portName + '\`:\n' + problem);
+
+            case 9:
+                    var moduleName = fact1;
+                    var region = fact2;
+                    var value = fact3;
+                    var message = fact4;
+                    throw new Error(
+                            'TODO in module \`' + moduleName + '\` from the \`case\` expression '
+                            + _Debug_regionToString(region) + '\n\nIt received the following value:\n\n    '
+                            + _Debug_toString(value).replace('\n', '\n    ')
+                            + '\n\nBut the branch that handles it says:\n\n    ' + message.replace('\n', '\n    ')
+                    );
+
+            default:
+                    throw new Error('What went wrong?')
+    }
+}
+`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_Debug_crash",
+          {
+            "endIndex": 1317,
+            "name": "_Debug_crash",
+            "needs": [
+              "_Debug_regionToString",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
     })
 })
 
