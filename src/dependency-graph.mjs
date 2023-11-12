@@ -34,22 +34,23 @@ function gatherNeeds(identifier, map) {
 }
 
 /**
- *  
+ * This parses the global scope of the Elm compiler's IIFE output.
+ * It only needs a reduced amount of possible declarations compared to the more
+ * general and complicated findNeedsInStatementBlock.
  * @param {string} code 
  * @returns {DependencyMap}
  */
 export function getDeclarationsAndDependencies(code) {
-    const tree = jsParser.parse(code)
-
     /** @type {DependencyMap} */
     const result = new Map()
 
+    const tree = jsParser.parse(code)
     const cursor = tree.walk()
     cursor.gotoFirstChild()
 
+    /** @type {ParsedDeclaration|Error|null} */
+    let parsed = null
     do {
-        /** @type ParsedDeclaration|Error|null */
-        let parsed
         switch (cursor.nodeType) {
             case 'variable_declaration':
                 parsed = parseVariableDeclaration(cursor.currentNode, emptyScope())
@@ -72,7 +73,6 @@ export function getDeclarationsAndDependencies(code) {
         if (parsed) {
             result.set(parsed.name, parsed)
         }
-
     } while (cursor.gotoNextSibling())
 
     return result
@@ -291,7 +291,6 @@ function findNeedsInForStatement(node, parentScope) {
     /** @type {Array<Array<string>>} */
     const needs = []
 
-    // const cursor = node.children[3].walk()
     const cursor = node.walk()
     cursor.gotoFirstChild()
 
@@ -325,6 +324,7 @@ function findNeedsInForStatement(node, parentScope) {
                 throw new Error(`unsupported node type '${cursor.nodeType}' in for statement`)
         }
     } while (cursor.gotoNextSibling())
+
     return needs.flat()
 }
 
@@ -383,6 +383,7 @@ function findNeedsInStatementBlock(node, parentScope) {
             needs.push(parsed.needs)
         }
     } while (cursor.gotoNextSibling())
+
     return needs.flat()
 }
 
