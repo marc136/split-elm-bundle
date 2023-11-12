@@ -55,10 +55,10 @@ export function getDeclarationsAndDependencies(code) {
         do {
             switch (cursor.nodeType) {
                 case 'variable_declaration':
-                    parsed = parseVariableDeclarations(cursor.currentNode, emptyScope())
+                    parsed = parseVariableDeclarations(cursor.currentNode, newScope())
                     break
                 case 'function_declaration':
-                    parsed = parseFunctionDeclaration(cursor.currentNode, emptyScope())
+                    parsed = parseFunctionDeclaration(cursor.currentNode, newScope())
                     break
                 case 'expression_statement':
                 // so far only 
@@ -117,7 +117,7 @@ export function getDeclarationsAndDependencies(code) {
 /**
  * 
  * @param {SyntaxNode} node a `VariableDeclarationNode` with type `variable_declaration` 
- * @param {DeclarationsInScope} scope
+ * @param {DeclarationsInScope} scope is mutated
  * @returns {ParsedDeclarations|Error}
  */
 function parseVariableDeclarations(node, scope) {
@@ -194,7 +194,7 @@ function findNeeds(node, scope) {
             const formalParameters = node.children[2].namedChildren
                 .filter(n => n.type === 'identifier')
                 .map(n => n.text)
-            return findNeeds(node.children[3], { parentScope: scope, declarations: formalParameters })
+            return findNeeds(node.children[3], newScope(scope, formalParameters))
         }
         case 'function': {
             assert(node.children[1].type === 'formal_parameters')
@@ -202,7 +202,7 @@ function findNeeds(node, scope) {
             const formalParameters = node.children[1].namedChildren
                 .filter(n => n.type === 'identifier')
                 .map(n => n.text)
-            return findNeeds(node.children[2].children[1], { parentScope: scope, declarations: formalParameters })
+            return findNeeds(node.children[2].children[1], newScope(scope, formalParameters))
         }
         case 'arguments': {
             return node.namedChildren.flatMap(n => {
@@ -254,7 +254,7 @@ function findNeeds(node, scope) {
             if (node.childCount !== 3 || node.children[0].type !== 'identifier') {
                 throw new Error('Unexpected shape of `variable_declarator` node')
             }
-            return findNeeds(node.children[2], { parentScope: scope, declarations: [node.children[0].text] })
+            return findNeeds(node.children[2], newScope(scope, [node.children[0].text]))
         }
         case 'call_expression': {
             if (node.childCount !== 2) {
@@ -286,7 +286,7 @@ function findNeeds(node, scope) {
             assert(node.children[1].type === 'parenthesized_expression')
             assert(node.children[2].type === 'switch_body')
             return findNeeds(node.children[1], scope).concat(
-                findNeeds(node.children[2], { parentScope: scope, declarations: [] })
+                findNeeds(node.children[2], newScope(scope))
             )
         }
         case 'object':
@@ -307,6 +307,9 @@ function findNeeds(node, scope) {
         case 'throw_statement': {
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
         }
+        case 'true':
+        case 'false':
+        case 'null':
         case 'number':
         case 'string':
         case 'property_identifier':
@@ -319,6 +322,17 @@ function findNeeds(node, scope) {
             logNode(node)
             throw new Error(`todo findNeeds('${node.type}')`)
     }
+}
+
+
+/**
+ * Creates a new child scope from the given parent scope
+ * @param {DeclarationsInScope|undefined} parentScope 
+ * @param {Array<string>} declarations
+ * @returns {DeclarationsInScope}
+ */
+function newScope(parentScope = undefined, declarations = []) {
+    return { parentScope, declarations }
 }
 
 /**
@@ -344,7 +358,7 @@ function wrapIdentifier(identifier, scope) {
  */
 function findNeedsInForStatement(node, parentScope) {
     /** @type {DeclarationsInScope} */
-    const scope = { parentScope, declarations: [] }
+    const scope = newScope(parentScope)
     /** @type {Array<Array<string>>} */
     const needs = []
 
@@ -357,12 +371,13 @@ function findNeedsInForStatement(node, parentScope) {
             case '(':
                 break
             case 'variable_declaration':
+                // Variable declaration is hoisted out of a for_statement and can be used later.
+                // For now, I only implemented one level. Hopefully it won't need more.
                 const newVar = parseVariableDeclarations(cursor.currentNode, parentScope)
                 if (!newVar) throw new Error(`Could not parse variable declaration '${cursor.currentNode.text}'`)
                 if (newVar instanceof Error) {
                     throw newVar
                 }
-                scope.declarations.push(...newVar.names)
                 needs.push(newVar.needs)
                 break
             case 'expression_statement':
@@ -404,8 +419,7 @@ function findNeedsInStatementBlock(node, parentScope) {
     const cursor = node.walk()
     cursor.gotoFirstChild()
 
-    /** @type {DeclarationsInScope} */
-    const scope = { parentScope, declarations: [] }
+    const scope = newScope(parentScope)
     /** @type {Array<Array<string>>} */
     const needs = []
 
@@ -461,19 +475,13 @@ function findNeedsInStatementBlock(node, parentScope) {
 }
 
 /**
- * @returns {DeclarationsInScope}
- */
-function emptyScope() {
-    return { parentScope: undefined, declarations: [] }
-}
-
-/**
  * Returns true if the identifier was declared in the current scope or one of its parents
  * @param {string} identifier 
  * @param {DeclarationsInScope} scope 
  * @returns {boolean}
  */
 function isDeclaredInScope(identifier, scope) {
+    // console.log('isDeclaredInScope(', inspect({ identifier, scope }, false, 4))
     if (scope.declarations.includes(identifier)) return true
     if (scope.parentScope) return isDeclaredInScope(identifier, scope.parentScope)
     switch (identifier) {
