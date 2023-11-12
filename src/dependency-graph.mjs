@@ -327,6 +327,7 @@ function findNeeds(node, scope) {
         case 'false':
         case 'null':
         case 'undefined':
+        case 'continue_statement':
         case 'number':
         case 'string':
         case 'property_identifier':
@@ -470,71 +471,15 @@ function findNeedsInForInStatement(node, parentScope) {
  */
 function findNeedsInStatementBlock(node, parentScope) {
     assert(node.type === 'statement_block')
-    if (node.childCount === 3) {
-        // only one statement inside, take shortcut
-        return findNeeds(node.children[1], parentScope)
-    }
-
-    const cursor = node.walk()
-    cursor.gotoFirstChild()
 
     const scope = newScope(parentScope)
     /** @type {Array<Array<string>>} */
     const needs = []
 
+    const cursor = node.walk()
+    cursor.gotoFirstChild()
     do {
-        /** @type ParsedDeclarations|ParsedDeclaration|Error|null */
-        let parsed = null
-        switch (cursor.nodeType) {
-            case '{':
-            case '}':
-                break
-            case 'variable_declaration':
-                parsed = parseVariableDeclarations(cursor.currentNode, scope)
-                break
-            case 'function_declaration':
-                parsed = parseFunctionDeclaration(cursor.currentNode, scope)
-                break
-            case 'if_statement':
-                needs.push(findNeeds(node.children[1], scope))
-                needs.push(findNeeds(node.children[2], scope))
-                break
-            case 'for_statement':
-                needs.push(findNeedsInForStatement(cursor.currentNode, scope))
-                break
-            case 'for_in_statement':
-                needs.push(findNeedsInForInStatement(cursor.currentNode, scope))
-                break
-            case 'switch_statement':
-            case 'do_statement':
-            case 'while_statement':
-            case 'try_statement':
-            case 'return_statement':
-                needs.push(findNeeds(cursor.currentNode, scope))
-                break
-            case 'expression_statement':
-                needs.push(findNeeds(cursor.currentNode, scope))
-                break
-            case 'comment':
-                //ignore
-                break
-            default:
-                logNode(cursor.currentNode)
-                parsed = new Error(`TODO findNeedsInStatementBlock '${cursor.nodeType}'`)
-        }
-
-        if (parsed instanceof Error) {
-            throw parsed
-        }
-        if (parsed) {
-            if ("names" in parsed) {
-                scope.declarations.push(...parsed.names)
-            }
-            if ("name" in parsed) {
-                scope.declarations.push(parsed.name)
-            }
-            needs.push(parsed.needs)
-        }
+        needs.push(findNeeds(cursor.currentNode, scope))
     } while (cursor.gotoNextSibling())
 
     return needs.flat()
