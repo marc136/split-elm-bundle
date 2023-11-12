@@ -6,7 +6,7 @@
   "scripts": {
     "check": "tsc",
     "coverage": "vitest run --coverage",
-    "test": "vitest"
+    "test": "vitest --singlethread"
   },
   "keywords": [],
   "author": "Marc Walter",
