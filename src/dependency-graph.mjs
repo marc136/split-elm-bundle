@@ -12,25 +12,29 @@ import { jsParser } from './js-parser.mjs';
 
 
 /**
+ * Gathers all direct and indirect needs of an identifier in one Set.
+ * 
  * @param {string} identifier
  * @param { { declarations: DependencyMap } } map 
  * @returns {Set<string>}
  */
 export function getDependenciesOf(identifier, { declarations }) {
-    return new Set(gatherNeeds(identifier, declarations))
-}
-
-/**
- * Gathers all direct and indirect needs of an identifier in one list.
- * The list may contain duplicate entries.
- * @param {string} identifier
- * @param {DependencyMap} map 
- * @returns {Array<string>}
- */
-function gatherNeeds(identifier, map) {
-    const direct = map.get(identifier)
-    if (!direct) throw new Error(`Unknown identifier '${identifier}'`)
-    return direct.needs.concat(direct.needs.flatMap(n => gatherNeeds(n, map)))
+    const result = new Set()
+    let queue = [identifier]
+    do {
+        const id = queue.shift()
+        if (!id) break
+        if (!result.has(id)) {
+            const direct = declarations.get(id)
+            if (!direct) {
+                throw new Error(`Unknown identifier '${id}'`)
+            }
+            result.add(direct.name)
+            queue.push(...direct.needs)
+        }
+    } while (queue.length > 0)
+    result.delete(identifier)
+    return result
 }
 
 /**
