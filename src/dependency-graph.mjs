@@ -7,6 +7,10 @@ import { jsParser } from './js-parser.mjs';
  */
 
 /**
+ * @typedef {{ declarations: DependencyMap, unnamed: Array<ParsedDeclarations> }} Dependencies
+ */
+
+/**
  * @typedef {Map<string, ParsedDeclaration>} DependencyMap
  */
 
@@ -15,17 +19,18 @@ import { jsParser } from './js-parser.mjs';
  * Gathers all direct and indirect needs of an identifier in one Set.
  * 
  * @param {string} identifier
- * @param { { declarations: DependencyMap } } map 
+ * @param { Dependencies } deps
  * @returns {Set<string>}
  */
-export function getDependenciesOf(identifier, { declarations }) {
+export function getDependenciesOf(identifier, deps) {
     const result = new Set()
     let queue = [identifier]
+    queue.push(...deps.unnamed.flatMap(dep => dep.needs))
     do {
         const id = queue.shift()
         if (!id) break
         if (!result.has(id)) {
-            const direct = declarations.get(id)
+            const direct = deps.declarations.get(id)
             if (!direct) {
                 throw new Error(`Unknown identifier '${id}'`)
             }
@@ -42,7 +47,7 @@ export function getDependenciesOf(identifier, { declarations }) {
  * It only needs a reduced amount of possible declarations compared to the more
  * general and complicated findNeedsInStatementBlock.
  * @param {string} code 
- * @returns {{ declarations: DependencyMap, unnamed: Array<ParsedDeclarations> }}
+ * @returns {Dependencies}
  */
 export function getDeclarationsAndDependencies(code) {
     /** @type {DependencyMap} */
@@ -67,6 +72,7 @@ export function getDeclarationsAndDependencies(code) {
                     parsed = parseFunctionDeclaration(cursor.currentNode, newScope())
                     break
                 case 'try_statement':
+                case 'expression_statement': {
                     const needs = findNeeds(cursor.currentNode, newScope())
                     if (Array.isArray(needs) && needs.length > 0) {
                         /** @type ParsedDeclarations */
@@ -74,9 +80,7 @@ export function getDeclarationsAndDependencies(code) {
                         unnamed.push(parsed)
                     }
                     break
-                case 'expression_statement':
-                // so far only 
-                // `console.warn('Compiled in DEV mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');`
+                }
                 case 'empty_statement':
                 case 'comment':
                     //ignore

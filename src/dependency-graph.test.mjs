@@ -927,6 +927,45 @@ var $author$project$Static$main = A2(
   })
 })
 
+describe('Side effects', () => {
+  test("needs to pick up `_Platform_effectManagers['Task']`", () => {
+    const chunk = `
+_Platform_effectManagers['Task'] = _Platform_createManager($elm$core$Task$init, $elm$core$Task$onEffects, $elm$core$Task$onSelfMsg, $elm$core$Task$cmdMap);
+var $elm$core$Task$command = _Platform_leaf('Task');
+`
+    const actual = getDeclarationsAndDependencies(chunk)
+    expect(actual).toMatchInlineSnapshot(`
+    {
+      "declarations": Map {
+        "$elm$core$Task$command" => {
+          "endIndex": 209,
+          "name": "$elm$core$Task$command",
+          "needs": [
+            "_Platform_leaf",
+          ],
+          "startIndex": 157,
+        },
+      },
+      "unnamed": [
+        {
+          "endIndex": 156,
+          "names": [],
+          "needs": [
+            "_Platform_effectManagers",
+            "_Platform_createManager",
+            "$elm$core$Task$init",
+            "$elm$core$Task$onEffects",
+            "$elm$core$Task$onSelfMsg",
+            "$elm$core$Task$cmdMap",
+          ],
+          "startIndex": 1,
+        },
+      ],
+    }
+  `)
+  })
+})
+
 
 describe('ESM exports added by the convert script', () => {
   test('Parse `export const BrowserElement = { init: ... };`', () => {
