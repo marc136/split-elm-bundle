@@ -7,7 +7,7 @@ import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-
 describe('parse short chunks', () => {
   test('Empty variable declaration', () => {
     const chunk = 'var _VirtualDom_divertHrefToApp;'
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -25,7 +25,7 @@ describe('parse short chunks', () => {
 
   test('Variable declaration with ternary expression', () => {
     const chunk = `var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -61,7 +61,7 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
 
 	return {};
 });`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -85,7 +85,7 @@ function _VirtualDom_appendChild(parent, child)
 {
     parent.appendChild(child);
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -105,7 +105,7 @@ function _VirtualDom_appendChild(parent, child)
     const chunk = `function F2(fun) {
   return F(2, fun, function(a) { return function(b) { return fun(a,b); }; })
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -130,7 +130,7 @@ function F4(fun) {
     return function(d) { return fun(a, b, c, d); }; }; };
   });
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -160,7 +160,7 @@ var $author$project$Static$main = A2(
         [
             $elm$html$Html$text('Static')
         ]));`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -195,7 +195,7 @@ var _JsArray_foldr = F3(function(func, acc, array)
     return acc;
 });
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -221,7 +221,7 @@ var _JsArray_foldr = F3(function(func, acc, array)
             throw new Error(baseUrl + '/elm/core/blob/1.0.0/hints/' + identifier + '.md');
     }
     `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -270,7 +270,7 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
     }
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -290,7 +290,7 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
 
   test('Parses many `variable_delarator`s in one `variable_declaration`', () => {
     const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
           [
             [
@@ -359,7 +359,7 @@ function _Utils_eq(x, y)
         return isEqual;
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -393,7 +393,7 @@ function abc() {
 }
 
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -419,7 +419,7 @@ function _Utils_cmp(x,y,ord)
     for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); fake = global1, x = x.b, y = global2) {} // WHILE_CONSES
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -469,7 +469,7 @@ function _String_reverse(str)
         } while (global3)
         return arr.join('');
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -506,7 +506,7 @@ function _Char_fromCode(code)
         );
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk))
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
     expect(actual).toMatchInlineSnapshot(`
       [
         [
@@ -524,6 +524,165 @@ function _Char_fromCode(code)
     `)
   })
 
+
+  test('Support `assignment_expression` inside function `arguments`', () => {
+    const chunk = `
+function sendToApp(msg, viewMetadata)
+{
+        var pair = A2(update, msg, model);
+        stepper(model = pair.a, viewMetadata);
+        _Platform_enqueueEffects(managers, pair.b, subscriptions(model));
+}
+`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "sendToApp",
+          {
+            "endIndex": 206,
+            "name": "sendToApp",
+            "needs": [
+              "A2",
+              "update",
+              "model",
+              "stepper",
+              "model",
+              "_Platform_enqueueEffects",
+              "managers",
+              "subscriptions",
+              "model",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
+  test('Simplified _Platform_effectManager declaration', () => {
+    const chunk = `
+function _Platform_setupOutgoingPort(name, sendToApp)
+{
+    _Platform_effectManagers[name].c = F3(function(router, cmdList, state)
+    {
+        return init;
+    });
+}
+`
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_Platform_setupOutgoingPort",
+          {
+            "endIndex": 168,
+            "name": "_Platform_setupOutgoingPort",
+            "needs": [
+              "_Platform_effectManagers",
+              "F3",
+              "init",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
+  test('Support `assignment_expression` inside function `arguments`', () => {
+    const chunk = `
+function _Platform_setupOutgoingPort(name)
+{
+    _Platform_effectManagers[name].c = F3(function(router, cmdList, state)
+    {
+            for ( ; cmdList.b; cmdList = cmdList.b) // WHILE_CONS
+            {
+                    // grab a separate reference to subs in case unsubscribe is called
+                    var currentSubs = subs;
+                    var value = _Json_unwrap(converter(cmdList.a));
+                    for (var i = 0; i < currentSubs.length; i++)
+                    {
+                            currentSubs[i](value);
+                    }
+            }
+            return init;
+    });
+}
+`
+    console.warn(jsParser.parse(chunk).rootNode.toString())
+
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_Platform_setupOutgoingPort",
+          {
+            "endIndex": 614,
+            "name": "_Platform_setupOutgoingPort",
+            "needs": [
+              "_Platform_effectManagers",
+              "F3",
+              "subs",
+              "_Json_unwrap",
+              "converter",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
+
+  test('Support labeled statements', () => {
+    const chunk = `
+var $elm$core$Dict$foldr = F3(
+	function (func, acc, t) {
+		foldr:
+		while (true) {
+			if (t.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = t.b;
+				var value = t.c;
+				var left = t.d;
+				var right = t.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldr, func, acc, right)),
+					$temp$t = left;
+				func = $temp$func;
+				acc = $temp$acc;
+				t = $temp$t;
+				continue foldr;
+			}
+		}
+	});
+`
+    console.warn(jsParser.parse(chunk).rootNode.toString())
+
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "$elm$core$Dict$foldr",
+          {
+            "endIndex": 480,
+            "name": "$elm$core$Dict$foldr",
+            "needs": [
+              "F3",
+              "A3",
+              "A3",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+  })
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {
@@ -562,15 +721,15 @@ var $author$project$Static$main = A2(
             $elm$html$Html$text('Static')
         ]));
     `
-  const map = getDeclarationsAndDependencies(chunk)
+  const result = getDeclarationsAndDependencies(chunk)
 
   test('For `_List_fromArray`', () => {
-    const actual = getDependenciesOf('_List_fromArray', map)
+    const actual = getDependenciesOf('_List_fromArray', result)
     expect(actual).toMatchObject(new Set(['_List_Nil', '_List_Cons']))
   })
 
   test('For $author$project$Static$main', () => {
-    const actual = getDependenciesOf('$author$project$Static$main', map)
+    const actual = getDependenciesOf('$author$project$Static$main', result)
     expect(actual).toMatchInlineSnapshot(`
           Set {
             "A2",

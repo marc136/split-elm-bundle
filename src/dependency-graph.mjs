@@ -13,11 +13,11 @@ import { jsParser } from './js-parser.mjs';
 
 /**
  * @param {string} identifier
- * @param {DependencyMap} map 
+ * @param { { declarations: DependencyMap } } map 
  * @returns {Set<string>}
  */
-export function getDependenciesOf(identifier, map) {
-    return new Set(gatherNeeds(identifier, map))
+export function getDependenciesOf(identifier, { declarations }) {
+    return new Set(gatherNeeds(identifier, declarations))
 }
 
 /**
@@ -38,11 +38,13 @@ function gatherNeeds(identifier, map) {
  * It only needs a reduced amount of possible declarations compared to the more
  * general and complicated findNeedsInStatementBlock.
  * @param {string} code 
- * @returns {DependencyMap}
+ * @returns {{ declarations: DependencyMap, unnamed: Array<ParsedDeclarations> }}
  */
 export function getDeclarationsAndDependencies(code) {
     /** @type {DependencyMap} */
-    const result = new Map()
+    const declarations = new Map()
+    /** @type {Array<ParsedDeclarations} */
+    const unnamed = []
 
     const tree = jsParser.parse(code)
     const cursor = tree.walk()
@@ -59,6 +61,14 @@ export function getDeclarationsAndDependencies(code) {
                     break
                 case 'function_declaration':
                     parsed = parseFunctionDeclaration(cursor.currentNode, newScope())
+                    break
+                case 'try_statement':
+                    const needs = findNeeds(cursor.currentNode, newScope())
+                    if (Array.isArray(needs) && needs.length > 0) {
+                        /** @type ParsedDeclarations */
+                        const parsed = { names: [], needs, startIndex: cursor.startIndex, endIndex: cursor.endIndex }
+                        unnamed.push(parsed)
+                    }
                     break
                 case 'expression_statement':
                 // so far only 
@@ -78,14 +88,14 @@ export function getDeclarationsAndDependencies(code) {
             if (parsed) {
                 if ("names" in parsed) {
                     for (const name of parsed.names) {
-                        result.set(name, {
+                        declarations.set(name, {
                             name, needs: parsed.needs,
                             startIndex: parsed.startIndex, endIndex: parsed.endIndex,
                         })
                     }
                 }
                 if ("name" in parsed) {
-                    result.set(parsed.name, parsed)
+                    declarations.set(parsed.name, parsed)
                 }
             }
         } while (cursor.gotoNextSibling())
@@ -95,7 +105,7 @@ export function getDeclarationsAndDependencies(code) {
         console.warn(cursor.currentNode.text)
         throw ex
     }
-    return result
+    return { declarations, unnamed }
 }
 
 /**
@@ -142,7 +152,6 @@ function parseVariableDeclarations(node, scope) {
                 result.names.push(identifier.text)
                 scope.declarations.push(identifier.text)
                 if (expression) {
-                    // console.log(`findNeeds(expression, scope)`, expression.text)
                     result.needs = result.needs.concat(findNeeds(expression, scope))
                 }
                 break
@@ -205,42 +214,18 @@ function findNeeds(node, scope) {
             return findNeeds(node.children[2].children[1], newScope(scope, formalParameters))
         }
         case 'arguments': {
-            return node.namedChildren.flatMap(n => {
-                switch (n.type) {
-                    case 'identifier':
-                        return wrapIdentifier(n.text, scope)
-                    case 'number':
-                    case 'true':
-                    case 'false':
-                    case 'regex':
-                    case 'null':
-                    case 'undefined':
-                    case 'comment':
-                        return []
-                    case 'function':
-                    case 'object':
-                    case 'member_expression':
-                    case 'unary_expression':
-                    case 'binary_expression':
-                    case 'ternary_expression':
-                    case 'call_expression':
-                    case 'subscript_expression':
-                    case 'array':
-                    case 'string':
-                        return findNeeds(n, scope)
-                    default:
-                        console.log('argumentsnode -> check parent if in doubt')
-                        logNode(n)
-                        console.log(n.toString())
-                        throw new Error(`Unexpected arguments named child type ${n.type}`)
-                }
-            })
+            return node.namedChildren.flatMap(n => findNeeds(n, scope))
         }
         case 'parenthesized_expression': {
             return findNeeds(node.children[1], scope)
         }
         case 'if_statement': {
-            return findNeeds(node.children[1], scope).concat(findNeeds(node.children[2], scope))
+            debugger
+            // return findNeeds(node.children[1], scope).concat(findNeeds(node.children[2], scope))
+            return node.namedChildren.flatMap(n => findNeeds(n, scope))
+        }
+        case 'else_clause': {
+            return findNeeds(node.children[1], scope)
         }
         case 'for_statement': {
             return findNeedsInForStatement(node, scope)
@@ -273,15 +258,22 @@ function findNeeds(node, scope) {
                     // console.warn('call_expression > identifier', node.text, node.children)
                     return wrapIdentifier(node.children[0].text, scope).concat(findNeeds(node.children[1], scope))
                 case 'call_expression':
+                case 'subscript_expression':
+                case 'function':
                     return findNeeds(node.children[0], scope)
                 default:
                     logNode(node.children[0])
                     // return node.namedChildren.flatMap(n => findNeeds(n, scope))
-                    throw new Error(`Cannot handle ${node.children[0].type}`)
+                    throw new Error(`Cannot handle call_expression > ${node.children[0].type}`)
             }
         }
         case 'identifier':
             return wrapIdentifier(node.text, scope)
+        case 'labeled_statement': {
+            assert(node.children[0].type === 'statement_identifier')
+            const subscope = newScope(scope)//, [node.children[0].text])
+            return findNeeds(node.children[2], subscope)
+        }
         case 'return_statement': {
             return findNeeds(node.children[1], scope)
         }
@@ -327,6 +319,8 @@ function findNeeds(node, scope) {
         case 'false':
         case 'null':
         case 'undefined':
+        case 'regex':
+        case 'break_statement':
         case 'continue_statement':
         case 'number':
         case 'string':
@@ -399,6 +393,7 @@ function findNeedsInForStatement(node, parentScope) {
                 }
                 needs.push(newVar.needs)
                 break
+            case 'subscript_expression':
             case 'expression_statement':
             case 'update_expression':
             case 'assignment_expression':
@@ -496,12 +491,13 @@ function isDeclaredInScope(identifier, scope) {
     if (scope.declarations.includes(identifier)) return true
     if (scope.parentScope) return isDeclaredInScope(identifier, scope.parentScope)
     switch (identifier) {
-        case 'window':
-        case 'document':
         case 'Array':
+        case 'document':
         case 'Error':
-        case 'String':
+        case 'Object':
         case 'Math':
+        case 'String':
+        case 'window':
             return true
         default:
             return false
