@@ -344,6 +344,39 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
           ]
         `)
     })
+
+    test('Support `assignment_expression` inside `for_statement`', () => {
+        const chunk = `
+function _Utils_eq(x, y)
+{
+        for (
+                var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
+                isEqual && (pair = stack.pop());
+                isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
+                )
+        {}
+
+        return isEqual;
+}
+`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk))
+        expect(actual).toMatchInlineSnapshot(`
+      [
+        [
+          "_Utils_eq",
+          {
+            "endIndex": 291,
+            "name": "_Utils_eq",
+            "needs": [
+              "_Utils_eqHelp",
+              "_Utils_eqHelp",
+            ],
+            "startIndex": 1,
+          },
+        ],
+      ]
+    `)
+    })
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {

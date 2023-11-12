@@ -367,6 +367,7 @@ function findNeedsInForStatement(node, parentScope) {
                 break
             case 'expression_statement':
             case 'update_expression':
+            case 'assignment_expression':
                 needs.push(findNeeds(cursor.currentNode, scope))
                 break
             case ')':
@@ -383,7 +384,9 @@ function findNeedsInForStatement(node, parentScope) {
         }
     } while (cursor.gotoNextSibling())
 
-    return needs.flat()
+    // Assignment_expression can add a variable after it was first referenced.
+    // Hoisting of the declaration would be the corred behavior, but this works for now.
+    return needs.flat().filter(need => !scope.declarations.includes(need))
 }
 
 /**
