@@ -15,6 +15,17 @@ This is fine if we only have 2 apps, or if they are very similar, or if they are
 But for e.g. 5 that could be wasteful: If we e.g. have 2 big ones that share a lot of code and 3 small ones that don't need the big portions that are shared by the 2 big ones.  
 This leads to the second approach: Create granular files with shared code broken down for pairs of apps. But this won't be part of the initial MVP.
 
+# Create one shared code module and multiple app modules
+
+Steps:
+
+1. Compile two Elm apps into one js file
+2. Convert js to ESM
+3. Detect which functions are used in which app
+4. Copy shared code into one file and distinct code into the app files
+
+
+
 ---
 
 # Notes
