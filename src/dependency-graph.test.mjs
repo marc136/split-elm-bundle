@@ -183,8 +183,12 @@ var $author$project$Static$main = A2(
     })
 })
 
-test.skip('get dependencies of browser sandbox main', () => {
+describe('Get dependencies of browser sandbox main', () => {
     const chunk = `
+var $elm$html$Html$div;
+var $elm$html$Html$Attributes$id;
+var $elm$html$Html$text;
+
 var _List_Nil = { $: 0 };
 
 function _List_Cons(hd, tl) { return { $: 1, a: hd, b: tl }; }
@@ -204,12 +208,38 @@ function _List_fromArray(arr)
 function A2(fun, a, b) {
   return fun.a === 2 ? fun.f(a, b) : fun(a)(b);
 }
+var $author$project$Static$main = A2(
+    $elm$html$Html$div,
+    _List_fromArray(
+        [
+            $elm$html$Html$Attributes$id('Static')
+        ]),
+    _List_fromArray(
+        [
+            $elm$html$Html$text('Static')
+        ]));
+    `
     const map = getDeclarationsAndDependencies(chunk)
-    const expected = ['$elm$browser$Browser$sandbox']
-    const actual = getDependenciesOf('_List_fromArray', map)
-    expect(actual).toMatchObject(['_List_Nil', '_List_Cons'])
-})
 
+    test('For `_List_fromArray`', () => {
+        const actual = getDependenciesOf('_List_fromArray', map)
+        expect(actual).toMatchObject(['_List_Nil', '_List_Cons'])
+    })
+
+    test('For $author$project$Static$main', () => {
+        const actual = getDependenciesOf('$author$project$Static$main', map)
+        expect(actual).toMatchInlineSnapshot(`
+          [
+            "A2",
+            "$elm$html$Html$div",
+            "_List_fromArray",
+            "$elm$html$Html$Attributes$id",
+            "_List_fromArray",
+            "$elm$html$Html$text",
+          ]
+        `)
+    })
+})
 
 /**
  * 
