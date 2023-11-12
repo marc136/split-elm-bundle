@@ -34,14 +34,22 @@ export function convert(iife) {
     // With tree-sitter we can ignore that we have the injection of global this at the very end
     const programNodes = parsePlatformExport(iife.substring(iife.indexOf('{', platformExportIndex)))
 
-    const esm = [
-        iife.substring(start, platformExportIndex),
-        programNodes.map(program => `export const ${program.name} = { init: ${program.init.text} };`).join('\n'),
-        `export const Elm = { ${programNodes.map(program => program.name).join(', ')} };`,
-        'export default Elm;'
-    ].join('\n')
+    const esm = iife.substring(start, platformExportIndex) + '\n' + programNodesToJs(programNodes)
 
     return { esm, programNodes }
+}
+
+
+/**
+ * 
+ * @param {Array<{ name: string, init: SyntaxNode }>} programNodes
+ * @returns {string}
+ */
+function programNodesToJs(programNodes) {
+    return [
+        programNodes.map(program => `export const ${program.name} = { init: ${program.init.text} };`).join('\n'),
+        `export const Elm = { ${programNodes.map(program => program.name).join(', ')} };`,
+        'export default Elm;'].join('\n')
 }
 
 export async function wipAnalyze(input) {
