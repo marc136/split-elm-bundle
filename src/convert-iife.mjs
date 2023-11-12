@@ -42,6 +42,39 @@ export function convert(iife) {
 
 /**
  * 
+ * @param {string} iife compiled Elm js file
+ * @returns {string}
+ */
+export function convertAndRemoveDeadCode(iife) {
+    let result = ''
+    const { esm, programNodes } = convert(iife)
+    const map = getDeclarationsAndDependencies(esm)
+
+    const deps = new Set()
+    programNodes.forEach(n =>
+        getDependenciesOf(n.name, map).forEach(deps.add, deps)
+    )
+
+    /** @type Array<{startIndex: number, endIndex: number}> */
+    let chunks = Array.from(deps, key => map.declarations.get(key))
+        .filter(val => !!val)
+        .concat(...map.unnamed)
+
+    const strings = chunks
+        // sort deps by occurrence in Elm file
+        .sort((a, b) => a.startIndex - b.startIndex)
+        // then copy only those chunks into a new file
+        .map(chunk => esm.substring(chunk.startIndex, chunk.endIndex))
+
+    strings.push(programNodesToJs(programNodes))
+
+    // then I can diff the output
+    // and check if the new file still works
+    return strings.join('\n') + '\n'
+}
+
+/**
+ * 
  * @param {Array<{ name: string, init: SyntaxNode }>} programNodes
  * @returns {string}
  */
@@ -54,41 +87,24 @@ function programNodesToJs(programNodes) {
 
 export async function wipAnalyze(input) {
     const iife = await fs.readFile(input, 'utf-8')
+    const esm = convertAndRemoveDeadCode(iife)
+    let newEsm = `// extracted from ${input}\n` + esm
+    await fs.writeFile(input + '.dce.mjs', newEsm, 'utf-8')
 
-    const { esm, programNodes } = convert(iife)
-
-    const map = getDeclarationsAndDependencies(esm)
-
-
-
-    const deps = getDependenciesOf('Static', map)
-
-    let chunks = Array.from(deps, key => map.declarations.get(key))
-        .filter(val => !!val)
-        .concat(...map.unnamed)
-
-    // sort deps by occurrence in Elm file
-    chunks = chunks.sort((a, b) => a?.startIndex - b?.startIndex)
-
-    // then copy only those chunks into a new file
-    let newEsm = `// extracted from ${input}\n`
-    for (const chunk of chunks) {
-        if (!chunk || chunk.endIndex <= chunk.startIndex) {
-            const msg = 'Expected chunk with a startIndex and endIndex'
-            console.error(msg, chunk)
-            throw new Error(msg)
-        }
-        newEsm += esm.substring(chunk.startIndex, chunk.endIndex) + '\n'
+    return {
+        iifeByteSize: byteSize(iife),
+        iifeChars: iife.length,
+        esmByteSize: byteSize(newEsm),
+        esmChars: newEsm.length,
     }
+}
 
-    newEsm += '\n' + programNodesToJs(programNodes) + '\n'
-
-    // then I can diff the output
-    // and check if the new file still works
-
-    await fs.writeFile(input + '.marc.mjs', newEsm, 'utf-8')
-
-    return { map, extracted: newEsm }
+/**
+ * @param {string} string 
+ * @returns {number} length of string in byte
+ */
+function byteSize(string) {
+    return (new TextEncoder().encode(string)).length
 }
 
 /**

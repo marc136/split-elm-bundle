@@ -549,13 +549,19 @@ function isDeclaredInScope(identifier, scope) {
     switch (identifier) {
         case 'Array':
         case 'console':
+        case 'clearTimeout':
         case 'document':
         case 'DataView':
         case 'Error':
         case 'File':
         case 'FileList':
+        case 'isFinite':
+        case 'isNaN':
+        case 'JSON':
         case 'Object':
         case 'Math':
+        case 'requestAnimationFrame':
+        case 'setTimeout':
         case 'String':
         case 'window':
             return true
