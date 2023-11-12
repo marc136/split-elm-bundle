@@ -183,7 +183,7 @@ var $author$project$Static$main = A2(
     })
 })
 
-describe('Get dependencies of browser sandbox main', () => {
+describe('Get dependencies of simplified static (Html) main program', () => {
     const chunk = `
 var $elm$html$Html$div;
 var $elm$html$Html$Attributes$id;
