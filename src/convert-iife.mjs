@@ -1,13 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path';
-import Parser from 'tree-sitter';
-// If unsure about what node types exist in that grammar, 
-// open ./node_modules/tree-sitter-javascript/src/node-types.json
-// @ts-expect-error no type information given
-import JavaScript from 'tree-sitter-javascript';
-
-const jsParser = new Parser();
-jsParser.setLanguage(JavaScript);
+import { jsParser } from './js-parser.mjs';
 
 /**
  * @param {import("fs").PathLike | fs.FileHandle} input
