@@ -24,11 +24,175 @@ Steps:
 3. Detect which functions are used in which app
 4. Copy shared code into one file and distinct code into the app files
 
+---
+
+# Is it useful
+
+I think this is only useful in a project, where multiple Elm apps exist that don't need to directly share state. They can either communicate via ports or be completely separate from each other.
+
+One example is a multi-page application where on every html page, another Elm program is executed.
+
+If those programs do not share project-specific code, then only the Elm runtime and the used packages will be shared.
+
+If they share code, the benefits will be even better.
+
+# Usage and behavior
+In the end, it will mimic the CLI of the Elm compiler.  
+If you pass it one Elm program, its behavior will be very similar to [elm-esm](https://github.com/ChristophP/elm-esm).  
+It is intended to be used with multiple Elm programs, where the Elm compiler's bundle can be split in multiple ways.
+
+## Single files
+If you convert a single file, the output is very similar to [elm-esm](https://github.com/ChristophP/elm-esm). It might be shorter (even significantly if not much of the Elm standard library or runtime is used), but will also take longer. I did not benchmark this, but elm-esm runs 5 regex matches on the whole file, and this tool starts an external process for tree-sitter and then traverses the AST in JS.
+
+```
+$ ls -alh example/compiled/Static*
+91K example/compiled/Static.js
+29K example/compiled/Static.js.dce.mjs
+```
+
+Before
+```
+<script src="./Program.js">
+<script>
+    const program = Elm.Program.init({ node: document.body })
+    program.ports.outbound.subscribe(console.log)
+</script>
+```
+
+Then you can use it like with [elm-esm](https://github.com/ChristophP/elm-esm) because it also exports an `Elm` object:
+```
+<script type="module">
+    import { Elm } from './Program.mjs'
+    const program = Elm.Program.init({ node: document.body })
+    program.ports.outbound.subscribe(console.log)
+</script>
+```
+
+But I prefer to use either a default export
+```
+<script type="module">
+    import Elm from './Program.mjs'
+    const program = Elm.Program.init({ node: document.body })
+    program.ports.outbound.subscribe(console.log)
+</script>
+```
+
+Or named exports for each `main`:
+```
+<script type="module">
+    import { Program } from './Program.mjs'
+    const program = Program.init({ node: document.body })
+    program.ports.outbound.subscribe(console.log)
+</script>
+```
+
+## Multiple files
+
+There are several modes how shared data is loaded and how the programs are loaded.
+
+### Mode 1: Separate bundles with a shared import
+The first one generates one JS file per main program, and imports inside it the shared code.  
+But every JS file only contains one main program.
+
+npx elm-esm-split src/Program.elm src/Two.elm
+
+Generates three files: `Program.mjs`, `Two.mjs` and `shared.mjs`
+
+```
+// Content of Program.mjs
+import * as shared from './shared.mjs'
+...
+export const Program = ...
+export const Elm = { Program };
+export default Elm;
+```
+
+Usage:
+```
+<script type="module">
+    import { Program } from './Program.mjs'
+    const program = Program.init({ node: document.body })
+    program.ports.outbound.subscribe(console.log)
+</script>
+```
+
+### Mode 2: Combined bundles where each program is lazily imported
+The second mode generates one bundle file that contains the shared code, and each main program is loaded only when needed.
+
+```
+// Content of bundle.mjs
+import * as shared from './shared.mjs'
+...
+export const Program = { init: async (params) => { 
+    const { Program } = await import('./Program.mjs')
+    Program.init(params)
+}}
+export const Two = { init: async (params) => { 
+    const { Two } = await import('./Two.mjs')
+    Two.init(params)
+}}
+export const Elm = { Program };
+export default Elm;
+```
+
+```
+<script type="module">
+    import Elm from './bundle.mjs'
+    const program = Elm.Program.init({ node: document.body }).then(() => {
+        console.log('Elm program was imported and initialized)
+    })
+    program.ports.outbound.subscribe(data => {
+        if (data.action === 'init' && data.program) {
+            Elm[data.program].init({ node: document.body }).then(() => {
+                console.log(`Elm program ${data.program} was imported and initialized`)
+            })
+        }
+    })
+</script>
+```
+
+
+### Mode 3: Combined bundles where one program is imported directly and the others lazily
+
+```
+// Content of Program.mjs
+import * as shared from './shared.mjs'
+...
+export const Program = ...
+export const Two = { init: async (params) => { 
+    const { Two } = await import('./Two.mjs')
+    Two.init(params)
+}}
+export const Elm = { Program };
+export default Elm;
+```
+
+```
+<script type="module">
+    import Elm from './Program.mjs'
+    const program = Elm.Program.init({ node: document.body })
+    program.ports.outbound.subscribe(data => {
+        if (data.action === 'init' && data.program) {
+            Elm[data.program].init({ node: document.body }).then(() => {
+                console.log(`Elm program ${data.program} was imported and initialized`)
+            })
+        }
+    })
+</script>
+```
 
 
 ---
 
 # Notes
+
+## Comparing gzipped size of file
+
+```sh
+gzip -c file.js | wc -c
+```
+
+## Live code inclusion (by Mario Rogic)
 
 Mario's gist comment about dead code removal (live code inclusion) https://gist.github.com/supermario/629b4135657df19e6f4ff18bfcbbeb72
 
