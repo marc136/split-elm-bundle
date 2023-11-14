@@ -34,7 +34,7 @@ export function convert(iife) {
     // With tree-sitter we can ignore that we have the injection of global this at the very end
     const programNodes = parsePlatformExport(iife.substring(iife.indexOf('{', platformExportIndex)))
 
-    const esm = iife.substring(start, platformExportIndex) + '\n' + programNodesToJs(programNodes)
+    const esm = iife.substring(start, platformExportIndex) + '\n' + exportsToString(programNodes)
 
     return { esm, programNodes }
 }
@@ -55,18 +55,15 @@ export function convertAndRemoveDeadCode(iife) {
         getDependenciesOf(n.name, map).forEach(deps.add, deps)
     )
 
-    /** @type Array<{startIndex: number, endIndex: number}> */
-    let chunks = Array.from(deps, key => map.declarations.get(key))
+    let strings = Array.from(deps, key => map.declarations.get(key))
         .filter(val => !!val)
         .concat(...map.unnamed)
-
-    const strings = chunks
         // sort deps by occurrence in Elm file
         .sort((a, b) => a.startIndex - b.startIndex)
         // then copy only those chunks into a new file
         .map(chunk => esm.substring(chunk.startIndex, chunk.endIndex))
 
-    strings.push(programNodesToJs(programNodes))
+    strings.push(exportsToString(programNodes))
 
     // then I can diff the output
     // and check if the new file still works
@@ -78,7 +75,7 @@ export function convertAndRemoveDeadCode(iife) {
  * @param {Array<{ name: string, init: SyntaxNode }>} programNodes
  * @returns {string}
  */
-function programNodesToJs(programNodes) {
+function exportsToString(programNodes) {
     return [
         programNodes.map(program => `export const ${program.name} = { init: ${program.init.text} };`).join('\n'),
         `export const Elm = { ${programNodes.map(program => program.name).join(', ')} };`,
