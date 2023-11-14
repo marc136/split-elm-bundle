@@ -1,17 +1,27 @@
 import assert from 'node:assert';
-import { inspect } from 'node:util';
 import { jsParser } from './js-parser.mjs';
 
 /**
- * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
- */
-
-/**
- * @typedef {{ declarations: DependencyMap, unnamed: Array<ParsedDeclarations> }} Dependencies
- */
-
-/**
- * @typedef {Map<string, ParsedDeclaration>} DependencyMap
+ * @typedef CodeWithDeps
+ * @prop {number} startIndex
+ * @prop {number} endIndex
+ * @prop {Array<string>} needs
+ * 
+ * @typedef {{ name: string } & CodeWithDeps} SingleDeclaration 
+ * @typedef {{ names: string[] } & CodeWithDeps} MultipleDeclarations
+ * 
+ * @typedef {import('tree-sitter').SyntaxNode} SyntaxNode
+ * 
+ * @typedef Dependencies
+ * @prop {DependencyMap} declarations
+ * @prop {Array<CodeWithDeps>} unnamed 
+ * 
+ * @typedef {Map<string, SingleDeclaration>} DependencyMap
+ * 
+ * @typedef DeclarationsInScope
+ * @prop {DeclarationsInScope|undefined} parentScope
+ * @prop {Array<string>} declarations
+ * @prop {boolean} isFunctionScope
  */
 
 
@@ -52,7 +62,7 @@ export function getDependenciesOf(identifier, deps) {
 export function getDeclarationsAndDependencies(code) {
     /** @type {DependencyMap} */
     const declarations = new Map()
-    /** @type {Array<ParsedDeclarations} */
+    /** @type {Array<MultipleDeclarations>} */
     const unnamed = []
 
     const tree = jsParser.parse(code)
@@ -60,8 +70,7 @@ export function getDeclarationsAndDependencies(code) {
     cursor.gotoFirstChild()
 
     try {
-
-        /** @type {ParsedDeclaration|ParsedDeclarations|Error|null} */
+        /** @type {SingleDeclaration|MultipleDeclarations|Error|null} */
         let parsed = null
         do {
             switch (cursor.nodeType) {
@@ -75,7 +84,7 @@ export function getDeclarationsAndDependencies(code) {
                 case 'expression_statement': {
                     const needs = findNeeds(cursor.currentNode, newScope())
                     if (Array.isArray(needs) && needs.length > 0) {
-                        /** @type ParsedDeclarations */
+                        /** @type MultipleDeclarations */
                         const parsed = { names: [], needs, startIndex: cursor.startIndex, endIndex: cursor.endIndex }
                         unnamed.push(parsed)
                     }
@@ -122,32 +131,15 @@ export function getDeclarationsAndDependencies(code) {
 }
 
 /**
- * @typedef ParsedDeclaration
- * @prop {string} name
- * @prop {number} startIndex
- * @prop {number} endIndex
- * @prop {Array<string>} needs
- */
-
-/**
- * @typedef ParsedDeclarations
- * @prop {Array<string>} names
- * @prop {number} startIndex
- * @prop {number} endIndex
- * @prop {Array<string>} needs
- */
-
-/**
- * 
  * @param {SyntaxNode} node a `VariableDeclarationNode` with type `variable_declaration` 
  * @param {DeclarationsInScope} scope is mutated
- * @returns {ParsedDeclarations|Error}
+ * @returns {MultipleDeclarations|Error}
  */
 function parseVariableDeclarations(node, scope) {
     const cursor = node.walk()
     cursor.gotoFirstChild()
 
-    /** @type ParsedDeclarations */
+    /** @type MultipleDeclarations */
     const result = {
         names: [],
         needs: [],
@@ -181,10 +173,9 @@ function parseVariableDeclarations(node, scope) {
 }
 
 /**
- * 
  * @param {SyntaxNode} node with type `function_declaration`
  * @param {DeclarationsInScope} parentScope
- * @returns {ParsedDeclaration|Error}
+ * @returns {SingleDeclaration|Error}
  */
 function parseFunctionDeclaration(node, parentScope) {
     if (node.childCount !== 4
@@ -210,10 +201,9 @@ function parseFunctionDeclaration(node, parentScope) {
 }
 
 /**
- * 
  * @param {SyntaxNode} node with type `function_declaration`
  * @param {DeclarationsInScope} scope
- * @returns {ParsedDeclaration|Error}
+ * @returns {SingleDeclaration|Error}
  */
 function parseExport(node, scope) {
     if (node.children[0].type === 'export' && node.children[1].type === 'default') {
@@ -229,10 +219,9 @@ function parseExport(node, scope) {
 }
 
 /**
- * 
  * @param {SyntaxNode} node with type `function_declaration`
  * @param {DeclarationsInScope} scope
- * @returns {ParsedDeclaration|Error}
+ * @returns {SingleDeclaration|Error}
  */
 function parseNamedExport(node, scope) {
     if (node.childCount !== 2
@@ -257,7 +246,6 @@ function parseNamedExport(node, scope) {
 }
 
 /**
- * 
  * @param {SyntaxNode} node
  * @param {DeclarationsInScope} scope current and parent declarations
  * @returns {Array<string>} 
@@ -272,14 +260,11 @@ function findNeeds(node, scope) {
         case 'function': {
             return findNeedsInFunction(node, scope)
         }
-        case 'arguments': {
-            return node.namedChildren.flatMap(n => findNeeds(n, scope))
-        }
         case 'parenthesized_expression': {
             return findNeeds(node.children[1], scope)
         }
+        case 'arguments':
         case 'if_statement': {
-            // return findNeeds(node.children[1], scope).concat(findNeeds(node.children[2], scope))
             return node.namedChildren.flatMap(n => findNeeds(n, scope))
         }
         case 'else_clause': {
@@ -414,14 +399,6 @@ function wrapIdentifier(identifier, scope) {
 }
 
 /**
- * @typedef DeclarationsInScope
- * @prop {DeclarationsInScope|undefined} parentScope
- * @prop {Array<string>} declarations
- * @prop {boolean} isFunctionScope
- */
-
-/**
- * 
  * @param {SyntaxNode} node with type `for_statement`
  * @param {DeclarationsInScope} parentScope
  * @returns {Array<string>}
@@ -449,7 +426,6 @@ function findNeedsInFunction(node, parentScope) {
 }
 
 /**
- * 
  * @param {SyntaxNode} node with type `for_statement`
  * @param {DeclarationsInScope} parentScope
  * @returns {Array<string>}
@@ -508,7 +484,6 @@ function findNeedsInForStatement(node, parentScope) {
 
 
 /**
- * 
  * @param {SyntaxNode} node with type `for_statement`
  * @param {DeclarationsInScope} parentScope
  * @returns {Array<string>}
@@ -546,7 +521,6 @@ function findNeedsInForInStatement(node, parentScope) {
 }
 
 /**
- * 
  * @param {SyntaxNode} node with type `statement_block`
  * @param {DeclarationsInScope} parentScope 
  */
