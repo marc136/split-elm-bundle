@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'vitest'
-import { wipAnalyze } from "./convert-iife.mjs"
+import { wipAnalyze } from "./split-esm.mjs"
 
 test('compile Static.elm', async () => {
     const result = await wipAnalyze('example/compiled/Static.js')
