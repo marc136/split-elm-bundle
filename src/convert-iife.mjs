@@ -39,7 +39,6 @@ export function convert(iife) {
 }
 
 /**
- * 
  * @param {string} iife compiled Elm js file
  * @returns {string}
  */
@@ -53,19 +52,38 @@ export function convertAndRemoveDeadCode(iife) {
         getDependenciesOf(n.name, map).forEach(deps.add, deps)
     )
 
-    let strings = Array.from(deps, key => map.declarations.get(key))
-        .filter(val => !!val)
-        .concat(...map.unnamed)
-        // sort deps by occurrence in Elm file
-        .sort((a, b) => a.startIndex - b.startIndex)
-        // then copy only those chunks into a new file
+    let strings = dependenciesToChunks(deps, map.declarations, map.unnamed)
         .map(chunk => esm.substring(chunk.startIndex, chunk.endIndex))
 
     strings.push(exportsToString(programNodes))
 
-    // then I can diff the output
-    // and check if the new file still works
     return strings.join('\n') + '\n'
+}
+
+/**
+ * @param {Set<string>} deps 
+ * @param {import('./dependency-graph.mjs').DependencyMap} declarations 
+ * @param {Array<Chunk>} chunks additional chunks to insert (e.g. unnamed declarations or side effects)
+ * @returns {Array<Chunk>} 
+ */
+function dependenciesToChunks(deps, declarations, chunks) {
+    return fetchChunksForDependencies(deps, declarations)
+        .concat(...chunks)
+        // sort deps by occurrence in Elm file
+        .sort((a, b) => a.startIndex - b.startIndex)
+}
+
+/**
+ * @param {Set<string>} deps 
+ * @param {import('./dependency-graph.mjs').DependencyMap} map 
+ * @returns {Array<Chunk>}
+ */
+function fetchChunksForDependencies(deps, map) {
+    return Array.from(deps, key => {
+        const value = map.get(key)
+        if (!value) throw new Error(`Could not find dependency '${key}' in map`)
+        return value
+    })
 }
 
 /**
@@ -141,21 +159,9 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
 
     transformStateForSplitMode1({ programs, shared })
 
-    /** @type {(deps: Set<string>) => Array<Chunk>} */
-    const getChunks = deps =>
-        Array.from(deps, key => {
-            const value = map.declarations.get(key)
-            if (!value) throw new Error(`Could not find dependency '${key}'`)
-            return value
-        })
-
     /** @type {(deps: Set<string>, chunks?: Array<Chunk>) => string } */
     const depsToString = (deps, chunks = []) =>
-        getChunks(deps)
-            .concat(...chunks)
-            // sort deps by occurrence in Elm file
-            .sort((a, b) => a.startIndex - b.startIndex)
-            // then copy only those chunks into a new file
+        dependenciesToChunks(deps, map.declarations, chunks)
             .map(chunk => esm.substring(chunk?.startIndex ?? 0, chunk?.endIndex ?? 0))
             .join('\n')
         + '\n'
