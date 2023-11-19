@@ -44,14 +44,14 @@ It is intended to be used with multiple Elm programs, where the Elm compiler's b
 ## Single files
 If you convert a single file, the output is very similar to [elm-esm](https://github.com/ChristophP/elm-esm). It might be shorter (even significantly if not much of the Elm standard library or runtime is used), but will also take longer. I did not benchmark this, but elm-esm runs 5 regex matches on the whole file, and this tool starts an external process for tree-sitter and then traverses the AST in JS.
 
-```
+```sh
 $ ls -alh example/compiled/Static*
 91K example/compiled/Static.js
 29K example/compiled/Static.js.dce.mjs
 ```
 
 Before
-```
+```html
 <script src="./Program.js">
 <script>
     const program = Elm.Program.init({ node: document.body })
@@ -60,7 +60,7 @@ Before
 ```
 
 Then you can use it like with [elm-esm](https://github.com/ChristophP/elm-esm) because it also exports an `Elm` object:
-```
+```html
 <script type="module">
     import { Elm } from './Program.mjs'
     const program = Elm.Program.init({ node: document.body })
@@ -69,7 +69,7 @@ Then you can use it like with [elm-esm](https://github.com/ChristophP/elm-esm) b
 ```
 
 But I prefer to use either a default export
-```
+```html
 <script type="module">
     import Elm from './Program.mjs'
     const program = Elm.Program.init({ node: document.body })
@@ -78,7 +78,7 @@ But I prefer to use either a default export
 ```
 
 Or named exports for each `main`:
-```
+```html
 <script type="module">
     import { Program } from './Program.mjs'
     const program = Program.init({ node: document.body })
@@ -98,7 +98,7 @@ npx elm-esm-split src/Program.elm src/Two.elm
 
 Generates three files: `Program.mjs`, `Two.mjs` and `shared.mjs`
 
-```
+```js
 // Content of Program.mjs
 import * as shared from './shared.mjs'
 ...
@@ -108,7 +108,7 @@ export default Elm;
 ```
 
 Usage:
-```
+```html
 <script type="module">
     import { Program } from './Program.mjs'
     const program = Program.init({ node: document.body })
@@ -119,7 +119,7 @@ Usage:
 ### Mode 2: Combined bundles where each program is lazily imported
 The second mode generates one bundle file that contains the shared code, and each main program is loaded only when needed.
 
-```
+```js
 // Content of bundle.mjs
 import * as shared from './shared.mjs'
 ...
@@ -135,7 +135,7 @@ export const Elm = { Program };
 export default Elm;
 ```
 
-```
+```html
 <script type="module">
     import Elm from './bundle.mjs'
     const program = Elm.Program.init({ node: document.body }).then(() => {
@@ -154,7 +154,7 @@ export default Elm;
 
 ### Mode 3: Combined bundles where one program is imported directly and the others lazily
 
-```
+```js
 // Content of Program.mjs
 import * as shared from './shared.mjs'
 ...
@@ -167,7 +167,7 @@ export const Elm = { Program };
 export default Elm;
 ```
 
-```
+```html
 <script type="module">
     import Elm from './Program.mjs'
     const program = Elm.Program.init({ node: document.body })
