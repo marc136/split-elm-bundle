@@ -11,6 +11,7 @@ import { jsParser } from './js-parser.mjs';
  * @typedef {{ names: string[] } & CodeWithDeps} MultipleDeclarations
  * 
  * @typedef {import('tree-sitter').SyntaxNode} SyntaxNode
+ * @typedef {import('tree-sitter').TreeCursor} TreeCursor
  * 
  * @typedef Dependencies
  * @prop {DependencyMap} declarations
@@ -66,14 +67,22 @@ export function getDeclarationsAndDependencies(code) {
     const unnamed = []
 
     const tree = jsParser.parse(code)
-    const cursor = tree.walk()
+    let cursor = tree.walk()
     cursor.gotoFirstChild()
-
     try {
         /** @type {SingleDeclaration|MultipleDeclarations|Error|null} */
         let parsed = null
         do {
             switch (cursor.nodeType) {
+                case 'var':
+                    const result = parseBrokenVariableDeclaration(cursor, code)
+                    if (result instanceof Error) {
+                        parsed = result
+                    } else {
+                        parsed = result.declaration
+                        cursor = result.cursor
+                    }
+                    break
                 case 'variable_declaration':
                     parsed = parseVariableDeclarations(cursor.currentNode, newScope())
                     break
@@ -128,6 +137,59 @@ export function getDeclarationsAndDependencies(code) {
         throw ex
     }
     return { declarations, unnamed }
+}
+
+/**
+ * Parses a broken variable declaration and returns a new cursor that can parse the rest of the file
+ * @param {TreeCursor} cursor 
+ * @param {string} code
+ * @returns {Error|{declaration:SingleDeclaration,cursor:TreeCursor}}
+ */
+function parseBrokenVariableDeclaration(cursor, code) {
+    const startIndex = cursor.currentNode.startIndex
+    cursor.gotoNextSibling()
+    if (cursor.nodeType === 'identifier') {
+        // tree-sitter cannot parse the code block `var _Markdown_marked = function () {...}();` from
+        // https://github.com/elm-explorations/markdown/blob/1.0.0/src/Elm/Kernel/Markdown.js
+        if (cursor.nodeText === '_Markdown_marked') {
+            const name = cursor.nodeText
+            // skip until `return module.exports;\n}();`
+            const needle = 'return module.exports;'
+            const temp = code.indexOf(needle, startIndex) + needle.length + 1
+            const endIndex = code.indexOf(';', temp)
+            const declaration = {
+                name,
+                startIndex,
+                endIndex,
+                needs: []
+            }
+
+            // and then parse a new tree from that position
+            const tree = jsParser.parse(code, undefined, {
+                includedRanges: [
+                    {
+                        startIndex: endIndex + 1,
+                        endIndex: code.length,
+                        // start and end position are not needed
+                        startPosition: { row: 1, column: 1 },
+                        endPosition: { row: 1, column: 1 },
+                    }
+                ]
+            })
+
+            const newCursor = tree.walk()
+            // Note: The first child is a comment node in this case, 
+            // so we don't care that we will immediately move to the next sibling.
+            // If we need more changes, we might need to introduce a way to skip
+            // `cursor.gotoNextSibling` inside `getDeclarationsAndDependencies`
+            newCursor.gotoFirstChild()
+            return { declaration, cursor: newCursor }
+        } else {
+            throw new Error(`More code that tree-sitter cannot parse with identifier '${cursor.nodeText}'`)
+        }
+    }
+
+    throw new Error(`More code that tree-sitter cannot parse of type '${cursor.nodeType}'`)
 }
 
 /**
@@ -552,11 +614,19 @@ function isDeclaredInScope(identifier, scope) {
     if (scope.declarations.includes(identifier)) return true
     if (scope.parentScope) return isDeclaredInScope(identifier, scope.parentScope)
     switch (identifier) {
+        case 'hljs':
+            // elm-explorations/markdown expects highlight.js to be in global scope, see
+            // https://github.com/elm-explorations/markdown/tree/1.0.0#code-blocks
+            return true
         case 'Array':
         case 'console':
+        case 'clearInterval':
         case 'clearTimeout':
         case 'document':
         case 'DataView':
+        case 'Date':
+        case 'decodeURIComponent':
+        case 'encodeURIComponent':
         case 'Error':
         case 'File':
         case 'FileList':
@@ -567,9 +637,11 @@ function isDeclaredInScope(identifier, scope) {
         case 'Object':
         case 'Math':
         case 'requestAnimationFrame':
+        case 'setInterval':
         case 'setTimeout':
         case 'String':
         case 'window':
+        case 'XMLHttpRequest':
             return true
         default:
             return false
