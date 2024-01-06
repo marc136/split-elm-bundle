@@ -521,6 +521,7 @@ function findNeedsInForStatement(node, parentScope) {
             case 'expression_statement':
             case 'update_expression':
             case 'assignment_expression':
+            case 'augmented_assignment_expression':
             case 'sequence_expression':
                 needs.push(findNeeds(cursor.currentNode, scope))
                 break
@@ -535,7 +536,7 @@ function findNeedsInForStatement(node, parentScope) {
                 break
             default:
                 logNode(cursor.currentNode)
-                throw new Error(`unsupported node type '${cursor.nodeType}' in for statement`)
+                throw new Error(`unsupported node type '${cursor.nodeType}' in \`for\` statement`)
         }
     } while (cursor.gotoNextSibling())
 
@@ -619,12 +620,27 @@ function isDeclaredInScope(identifier, scope) {
             // https://github.com/elm-explorations/markdown/tree/1.0.0#code-blocks
             return true
         case 'Array':
+        case 'Int8Array':
+        case 'Uint8Array':
+        case 'Uint8ClampedArray':
+        case 'Int16Array':
+        case 'Uint16Array':
+        case 'Int32Array':
+        case 'Uint32Array':
+        case 'BigInt64Array':
+        case 'BigUint64Array':
+        case 'Float32Array':
+        case 'Float64Array':
+        case 'ArrayBuffer':
+        case 'Blob':
         case 'console':
         case 'clearInterval':
         case 'clearTimeout':
         case 'document':
         case 'DataView':
         case 'Date':
+        case 'decodeURI':
+        case 'encodeURI':
         case 'decodeURIComponent':
         case 'encodeURIComponent':
         case 'Error':
@@ -633,13 +649,17 @@ function isDeclaredInScope(identifier, scope) {
         case 'history':
         case 'isFinite':
         case 'isNaN':
+        case 'Image':
         case 'JSON':
         case 'Object':
         case 'Math':
+        case 'MouseEvent':
+        case 'navigator':
         case 'requestAnimationFrame':
         case 'setInterval':
         case 'setTimeout':
         case 'String':
+        case 'URL':
         case 'window':
         case 'XMLHttpRequest':
             return true
