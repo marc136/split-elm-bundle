@@ -42,11 +42,12 @@ export function getDependenciesOf(identifier, deps) {
         if (!id) break
         if (!result.has(id)) {
             const direct = deps.declarations.get(id)
-            if (!direct) {
+            if (direct) {
+                result.add(direct.name)
+                queue.push(...direct.needs)
+            } else if (!existsInGlobalScope(id)) {
                 throw new Error(`Unknown identifier '${id}'`)
             }
-            result.add(direct.name)
-            queue.push(...direct.needs)
         }
     } while (queue.length > 0)
     result.delete(identifier)
@@ -614,6 +615,15 @@ function findNeedsInStatementBlock(node, parentScope) {
 function isDeclaredInScope(identifier, scope) {
     if (scope.declarations.includes(identifier)) return true
     if (scope.parentScope) return isDeclaredInScope(identifier, scope.parentScope)
+    return existsInGlobalScope(identifier)
+}
+
+/**
+ * Checks a hardcoded list of global identifiers
+ * @param {string} identifier 
+ * @returns {boolean}
+ */
+function existsInGlobalScope(identifier) {
     switch (identifier) {
         case 'hljs':
             // elm-explorations/markdown expects highlight.js to be in global scope, see
