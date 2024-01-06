@@ -2,11 +2,11 @@ import { expect, describe, test } from 'vitest'
 import { wipAnalyze } from "./split-esm.mjs"
 
 test('compile Static.elm', async () => {
-    const result = await wipAnalyze('example/compiled/Static.js')
+    const result = await wipAnalyze('examples/from-aide/compiled/Static.js')
     expect(result).toMatchInlineSnapshot(`
       {
-        "esmByteSize": 29519,
-        "esmChars": 29519,
+        "esmByteSize": 29530,
+        "esmChars": 29530,
         "iifeByteSize": 92933,
         "iifeChars": 92933,
       }
@@ -14,11 +14,11 @@ test('compile Static.elm', async () => {
 })
 
 test('compile BrowserElement.elm', async () => {
-    const result = await wipAnalyze('example/compiled/BrowserElement.js')
+    const result = await wipAnalyze('examples/from-aide/compiled/BrowserElement.js')
     expect(result).toMatchInlineSnapshot(`
       {
-        "esmByteSize": 71183,
-        "esmChars": 71183,
+        "esmByteSize": 71194,
+        "esmChars": 71194,
         "iifeByteSize": 113593,
         "iifeChars": 113593,
       }
@@ -26,11 +26,11 @@ test('compile BrowserElement.elm', async () => {
 })
 
 test('compile BrowserApplication.elm', async () => {
-    const result = await wipAnalyze('example/compiled/BrowserApplication.debug.js')
+    const result = await wipAnalyze('examples/from-aide/compiled/BrowserApplication.debug.js')
     expect(result).toMatchInlineSnapshot(`
       {
-        "esmByteSize": 84571,
-        "esmChars": 84571,
+        "esmByteSize": 84582,
+        "esmChars": 84582,
         "iifeByteSize": 280011,
         "iifeChars": 279991,
       }
@@ -38,11 +38,11 @@ test('compile BrowserApplication.elm', async () => {
 })
 
 test('compile BrowserSandbox+BrowserElement.elm', async () => {
-    const result = await wipAnalyze('example/compiled/BrowserSandbox+BrowserElement.js')
+    const result = await wipAnalyze('examples/from-aide/compiled/BrowserSandbox+BrowserElement.js')
     expect(result).toMatchInlineSnapshot(`
       {
-        "esmByteSize": 74123,
-        "esmChars": 74123,
+        "esmByteSize": 74134,
+        "esmChars": 74134,
         "iifeByteSize": 116487,
         "iifeChars": 116487,
       }

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+        <title>HMR with Static</title>
+    </head>
+
+    <body>
+        <main id="elm"></main>
+        <script type="module">
+            const flags = {}
+            const node = document.querySelector('main#elm')
+
+            import { Elm } from './Static.elm'
+            const elm = Elm.Static.init({ flags, node })
+        </script>
+    </body>
+</html>

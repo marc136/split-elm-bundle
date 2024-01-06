@@ -5,7 +5,7 @@ import { convert } from './convert-iife.mjs'
 
 describe('Converts Elm IIFE to ESM and extracts programs', async () => {
     const name = 'BrowserSandbox+BrowserElement.optimize'
-    const iife = await fs.readFile(`example/compiled/${name}.js`, 'utf-8')
+    const iife = await fs.readFile(`examples/from-aide/compiled/${name}.js`, 'utf-8')
     const { esm, programNodes } = convert(iife)
 
     test('Should find expected Elm programs', async () => {
@@ -16,7 +16,7 @@ describe('Converts Elm IIFE to ESM and extracts programs', async () => {
     })
 
     test('Should generate expected ESM code', () => {
-        expect(esm).toMatchFileSnapshot(`../example/compiled/${name}.mjs`)
+        expect(esm).toMatchFileSnapshot(`../examples/from-aide/compiled/${name}.mjs`)
     })
 })
 

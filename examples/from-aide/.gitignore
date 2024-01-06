@@ -1,0 +1,9 @@
+# Only manually add some files to this new repo
+compiled
+public
+package*
+src
+
+# cache
+elm-stuff
+.elm-aide

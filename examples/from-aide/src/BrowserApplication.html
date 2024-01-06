@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+        <title>This title should have been changed by the Elm app</title>
+    </head>
+
+    <body>
+        <script type="module">
+            const flags = 1
+            import { Elm } from './BrowserApplication.elm'
+            const elm = Elm.BrowserApplication.init({ flags })
+            elm.ports.outgoing.subscribe(() => {
+                console.log('JS received an `outgoing` port message and will answer to `incoming`')
+                elm.ports.incoming.send(1)
+            })
+        </script>
+    </body>
+</html>
