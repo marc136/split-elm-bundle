@@ -8,6 +8,9 @@
     "coverage": "vitest run --coverage",
     "test": "vitest --threads=false"
   },
+  "bin": {
+    "split-elm-bundle": "bin/split-elm-bundle.mjs"
+  },
   "keywords": [],
   "author": "Marc Walter",
   "private": true,
