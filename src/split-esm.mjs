@@ -110,7 +110,7 @@ export async function splitPerProgramWithSingleSharedData(input) {
         console.warn('Did not split the file because it contains only one program.');
         const esm = convertAndRemoveDeadCode(iife);
         let newEsm = `// extracted from ${input}\n` + esm;
-        await fs.writeFile(input + '.dce.mjs', newEsm, 'utf-8');
+        await writeFile(input + '.dce.mjs', newEsm);
     } else {
         await splitWith1stMode({
             outDir: path.dirname(input),
