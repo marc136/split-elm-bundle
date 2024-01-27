@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {  
+    "emitDeclarationOnly": true,                      /* Only output d.ts files and not JavaScript files. */
+    "noEmit": false,                                  /* Disable emitting files from a compilation. */
+  }
+}

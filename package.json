@@ -5,6 +5,8 @@
   "main": "src/main.mjs",
   "type": "module",
   "scripts": {
+    "build": "check && build:type-definitions",
+    "build:type-definitions": "tsc -p tsconfig.build.json",
     "check": "tsc",
     "coverage": "vitest run --coverage",
     "test": "vitest --threads=false",
