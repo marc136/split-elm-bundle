@@ -38,12 +38,17 @@ async function bufferSizeGzip(raw) {
 /**
  * @param {string} file
  * @param {string} content
+ * @param {import('./types/public.js').SideEffects} allowed
  * @returns {Promise<FileWithSizes>}
  */
-export async function writeFileAndPrintSizes(file, content) {
-    await fs.writeFile(file, content, 'utf-8')
+export async function writeFileAndPrintSizes(file, content, allowed) {
+    if (allowed.writeFiles) {
+        await fs.writeFile(file, content, 'utf-8')
+    }
     const size = await stringSizeGzip(content)
-    console.log(`Wrote ${path.basename(file)} ${sizesToString(size)}`)
+    if (allowed.printLogs) {
+        console.log(`Wrote ${path.basename(file)} ${sizesToString(size)}`)
+    }
     return { file, size }
 }
 

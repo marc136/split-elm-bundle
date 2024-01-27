@@ -20,7 +20,7 @@ export async function wipAnalyze(input) {
     const iife = await fs.readFile(input, 'utf-8')
     const esm = convertAndRemoveDeadCode(iife)
     let newEsm = `// extracted from ${input}\n` + esm
-    await writeFile(input + '.dce.mjs', newEsm)
+    await writeFileAndPrintSizes(input + '.dce.mjs', newEsm, { printLogs: true, writeFiles: false })
 
     return {
         iifeByteSize: byteSize(iife),
@@ -89,12 +89,17 @@ function fetchChunksForDependencies(deps, map) {
 
 /**
  * @param {string} filePath
+ * @param {import('./types/public.js').SideEffects} effects
  */
-export async function splitPerProgramWithSingleSharedData(filePath) {
+export async function splitPerProgramWithSingleSharedData(filePath, effects) {
     const iife = await fs.readFile(filePath, 'utf-8')
-    console.log(`Working in directory ${path.dirname(filePath)}`)
+    if (effects.printLogs) {
+        console.log(`Working in directory ${path.dirname(filePath)}`)
+    }
     const before = await stringSizeGzip(iife)
-    console.log(`Read ${path.basename(filePath)} ${sizesToString(before)}`)
+    if (effects.printLogs) {
+        console.log(`Read ${path.basename(filePath)} ${sizesToString(before)}`)
+    }
     const input = { file: filePath, sizes: before }
     const { esm, programNodes } = convert(iife)
 
@@ -104,15 +109,14 @@ export async function splitPerProgramWithSingleSharedData(filePath) {
         console.warn('Did not split the file because it contains only one program.')
         const esm = convertAndRemoveDeadCode(iife)
         let newEsm = `// extracted from ${filePath}\n` + esm
-        await writeFileAndPrintSizes(filePath + '.dce.mjs', newEsm)
-        // return { input, output: [output] }
+        await writeFileAndPrintSizes(filePath + '.dce.mjs', newEsm, effects)
     } else {
-        // const output = await splitWith1stMode({
         await splitWith1stMode({
             outDir: path.dirname(filePath),
             basename: path.basename(filePath, path.extname(filePath)) + '.split',
             programNodes,
             esm,
+            effects,
         })
         // return { input, output }
     }
@@ -129,10 +133,11 @@ export async function splitPerProgramWithSingleSharedData(filePath) {
  *  basename: string,
  *  programNodes: Array<ProgramNode>,
  *  esm: string
+ *  effects: import('./types/public.js').SideEffects
  * }} param
  * @returns {Promise<import('./file-size.mjs').FileWithSizes[]>} List of written files
  */
-async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
+async function splitWith1stMode({ outDir, basename, programNodes, esm, effects }) {
     const files = []
     const map = getDeclarationsAndDependencies(esm)
 
@@ -160,7 +165,7 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
     const sharedLib = 'shared'
     const sharedFilename = `${basename}.${sharedLib}.mjs`
     const dest = path.join(outDir, sharedFilename)
-    files.push(writeFileAndPrintSizes(dest, sharedCode))
+    files.push(writeFileAndPrintSizes(dest, sharedCode, effects))
 
     for (const program of programs) {
         console.log('Extracting', program.name)
@@ -180,7 +185,7 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
         code += orig.substring(lastIndex) + '\n'
 
         const dest = path.join(outDir, `${basename}.${program.name}.mjs`)
-        files.push(writeFileAndPrintSizes(dest, code))
+        files.push(writeFileAndPrintSizes(dest, code, effects))
     }
     return Promise.all(files)
 }

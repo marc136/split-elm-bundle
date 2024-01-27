@@ -10,6 +10,7 @@ const parser = {
     options: {
         // TODO add support for report=json
         report: { type: 'string', default: 'stdout' },
+        'dry-run': { type: 'boolean', default: false },
     },
 }
 
@@ -31,6 +32,11 @@ try {
                 console.error(`Run e.g. \`elm make --output=bundle.js ${files.join(' ')}\` first.`)
                 process.exit(1)
             case '.js':
+                /** @type {import('../src/types/public').SideEffects} */
+                const config = {
+                    printLogs: report === 'stdout',
+                    writeFiles: config['dry-run'],
+                }
                 await splitPerProgramWithSingleSharedData(file)
                 break
             default:
