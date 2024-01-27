@@ -6,7 +6,8 @@
   "scripts": {
     "check": "tsc",
     "coverage": "vitest run --coverage",
-    "test": "vitest --threads=false"
+    "test": "vitest --threads=false",
+    "format": "nix fmt"
   },
   "bin": {
     "split-elm-bundle": "bin/split-elm-bundle.mjs"
