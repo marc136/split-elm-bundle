@@ -7,13 +7,17 @@ import { splitPerProgramWithSingleSharedData } from '../src/split-esm.mjs';
 import { spawn, spawnSync } from 'node:child_process'
 import path from 'node:path';
 
-const options = {
-    // TODO add support for report=json
-    report: { type: 'string', default: 'stdout' },
+/** @type { import('node:util').ParseArgsConfig} */
+const parser = {
+    allowPositionals: true,
+    options: {
+        // TODO add support for report=json
+        report: { type: 'string', default: 'stdout' },
+    },
 }
 
 try {
-    const { positionals: files, values: config } = parseArgs({ options, allowPositionals: true })
+    const { positionals: files, values: config } = parseArgs(parser)
     console.log('parsed', { files, config })
 
     if (!Array.isArray(files) || files.length === 0) {
