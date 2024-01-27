@@ -5,13 +5,13 @@ import zlib from 'node:zlib'
 const gzip = promisify(zlib.gzip)
 
 /**
- * @typedef { import('./types/file-size.js').Sizes } Sizes
- * @typedef { import('./types/file-size.js').FileWithSizes } FileWithSizes
+ * @typedef {{ raw: number; gzip: number }} Sizes
+ * @typedef {{ file: string; size: Sizes }} FileWithSizes
  */
 
 /**
  * @param {import('node:fs').PathLike} file
- * @returns {Promise<Sizes>} sizes in byte
+ * @returns {Promise<Sizes>} raw and gzipped sizes in byte
  */
 export async function fileSizeGzip(file) {
     return fs.readFile(file).then(bufferSizeGzip)
@@ -19,7 +19,7 @@ export async function fileSizeGzip(file) {
 
 /**
  * @param {string} string
- * @returns {Promise<Sizes>} sizes in byte
+ * @returns {Promise<Sizes>} raw and gzipped sizes in byte
  */
 export async function stringSizeGzip(string) {
     const raw = Buffer.from(string, 'utf-8')
@@ -28,7 +28,7 @@ export async function stringSizeGzip(string) {
 
 /**
  * @param {Buffer} raw
- * @returns {Promise<Sizes>} sizes in byte
+ * @returns {Promise<Sizes>} raw and gzipped sizes in byte
  */
 async function bufferSizeGzip(raw) {
     const zipped = await gzip(raw)

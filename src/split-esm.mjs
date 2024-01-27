@@ -3,24 +3,16 @@ import path from 'node:path'
 import { jsParser } from './js-parser.mjs'
 import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs'
 import { convert, writeFile, exportsToString } from './convert-iife.mjs'
-import { byteToStr, sizesToString, stringSizeGzip, writeFileAndPrintSizes } from './file-size.mjs'
+import { sizesToString, stringSizeGzip, writeFileAndPrintSizes } from './file-size.mjs'
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
+ * @typedef { import('./convert-iife.mjs').ProgramNode} ProgramNode
  *
- * @typedef {{ name: string, init: SyntaxNode }} ProgramNode
- * @typedef Chunk
- * @prop {number} startIndex
- * @prop {number} endIndex
- * @prop {Array<string>} needs
- *
- * @typedef {{ outDir: string, basename: string, programNodes: Array<ProgramNode>, esm: string }} SplitMode1
- * @typedef { ProgramNode & { needs: Set<string>, shared: Set<string> }} SplitMode1Program
- * @typedef {{ programs: Array<SplitMode1Program>, shared: Set<string> }} SplitMode1State
+ * @typedef {{ startIndex: number, endIndex: number, needs: Array<string>}} Chunk
  */
 
 /**
- *
  * @param {import("fs").PathLike | fs.FileHandle} input
  * @returns
  */
@@ -132,7 +124,12 @@ export async function splitPerProgramWithSingleSharedData(filePath) {
  *
  * The global code that creates side effects is also copied into the shared file.
  *
- * @param {SplitMode1} param
+ * @param {{
+ *  outDir: string,
+ *  basename: string,
+ *  programNodes: Array<ProgramNode>,
+ *  esm: string
+ * }} param
  * @returns {Promise<import('./file-size.mjs').FileWithSizes[]>} List of written files
  */
 async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
@@ -191,8 +188,10 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
 /**
  * Removes common dependencies from the `programs` and adds them to `shared`.
  *
- * @param {SplitMode1State} data
- * @returns {undefined}
+ * @typedef {ProgramNode & { needs: Set<string>, shared: Set<string> }} SplitMode1Program
+ *
+ * @param {{ programs: Array<SplitMode1Program>, shared: Set<string> }} data
+ * @returns {void}
  */
 export function transformStateForSplitMode1({ programs, shared }) {
     // compare all needed dependencies between all programs

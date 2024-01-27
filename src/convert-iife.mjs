@@ -18,7 +18,7 @@ export async function convertFile(input, output) {
 
 /**
  * @param {string} iife compiled Elm js file
- * @returns {{esm: string, programNodes: Array<{ name: string, init: SyntaxNode }>}}
+ * @returns {{esm: string, programNodes: Array<ProgramNode>}}
  */
 export function convert(iife) {
     // `function F` is always exported first by the compiler
@@ -67,7 +67,7 @@ export async function writeFile(file, content) {
 /**
  *
  * @param {string} code
- * @returns {Array<{ name: string, init: SyntaxNode }>}
+ * @returns {Array<ProgramNode>}
  */
 function parsePlatformExport(code) {
     const tree = jsParser.parse(code)
@@ -85,7 +85,7 @@ function parsePlatformExport(code) {
  *
  * @param {SyntaxNode} key
  * @param {SyntaxNode} value
- * @returns {{ name: string, init: SyntaxNode }}
+ * @returns {ProgramNode}
  */
 function parseProgramPair(key, value) {
     const name = getKeyOfObject(key)
