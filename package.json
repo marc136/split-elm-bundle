@@ -8,7 +8,7 @@
     "build": "check && build:type-definitions",
     "build:type-definitions": "tsc -p tsconfig.build.json",
     "check": "tsc",
-    "coverage": "vitest run --coverage",
+    "coverage": "vitest run --coverage --threads=false",
     "test": "vitest --threads=false",
     "format": "nix fmt"
   },
