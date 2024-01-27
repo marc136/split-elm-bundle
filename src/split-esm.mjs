@@ -3,11 +3,11 @@ import path from 'node:path';
 import { jsParser } from './js-parser.mjs';
 import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs';
 import { convert, writeFile, exportsToString } from './convert-iife.mjs';
-
+import { byteToStr, sizesToString, stringSizeGzip, writeFileAndPrintSizes } from './file-size.mjs';
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
- * 
+ *
  * @typedef {{ name: string, init: SyntaxNode }} ProgramNode
  * @typedef Chunk
  * @prop {number} startIndex
@@ -97,24 +97,27 @@ function fetchChunksForDependencies(deps, map) {
 }
 
 /**
- *
- * @param {string} input
+ * @param {string} filePath
  */
-export async function splitPerProgramWithSingleSharedData(input) {
-    const iife = await fs.readFile(input, 'utf-8');
-    const { esm, programNodes } = convert(iife);
+export async function splitPerProgramWithSingleSharedData(filePath) {
+    const iife = await fs.readFile(filePath, 'utf-8')
+    console.log(`Working in directory ${path.dirname(filePath)}`)
+    const before = await stringSizeGzip(iife)
+    console.log(`Read ${path.basename(filePath)} ${sizesToString(before)}`)
+    const input = { file: filePath, sizes: before }
+    const { esm, programNodes } = convert(iife)
 
     if (programNodes.length < 1) {
-        throw new Error(`Could not extract a main program from '${input}'`);
+        throw new Error(`Could not extract a main program from '${filePath}'`);
     } else if (programNodes.length === 1) {
         console.warn('Did not split the file because it contains only one program.');
         const esm = convertAndRemoveDeadCode(iife);
-        let newEsm = `// extracted from ${input}\n` + esm;
-        await writeFile(input + '.dce.mjs', newEsm);
+        let newEsm = `// extracted from ${filePath}\n` + esm;
+        await writeFileAndPrintSizes(filePath + '.dce.mjs', newEsm);
     } else {
         await splitWith1stMode({
-            outDir: path.dirname(input),
-            basename: path.basename(input, path.extname(input)) + '.split',
+            outDir: path.dirname(filePath),
+            basename: path.basename(filePath, path.extname(filePath)) + '.split',
             programNodes,
             esm,
         });
@@ -158,7 +161,7 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
     const sharedLib = 'shared';
     const sharedFilename = `${basename}.${sharedLib}.mjs`;
     const dest = path.join(outDir, sharedFilename);
-    files.push(writeFile(dest, sharedCode));
+    files.push(writeFileAndPrintSizes(dest, sharedCode));
 
     for (const program of programs) {
         console.log('Extracting', program.name);
@@ -177,7 +180,7 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
         code += orig.substring(lastIndex) + '\n';
 
         const dest = path.join(outDir, `${basename}.${program.name}.mjs`);
-        files.push(writeFile(dest, code));
+        files.push(writeFileAndPrintSizes(dest, code));
     }
     return Promise.all(files);
 }
