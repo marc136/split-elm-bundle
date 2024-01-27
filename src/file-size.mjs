@@ -6,7 +6,7 @@ const gzip = promisify(zlib.gzip)
 
 /**
  * @typedef {{ raw: number; gzip: number }} Sizes
- * @typedef {{ file: string; size: Sizes }} FileWithSizes
+ * @typedef {{ file: string; sizes: Sizes }} FileWithSizes
  */
 
 /**
@@ -45,11 +45,12 @@ export async function writeFileAndPrintSizes(file, content, allowed) {
     if (allowed.writeFiles) {
         await fs.writeFile(file, content, 'utf-8')
     }
-    const size = await stringSizeGzip(content)
+    const sizes = await stringSizeGzip(content)
     if (allowed.printLogs) {
-        console.log(`Wrote ${path.basename(file)} ${sizesToString(size)}`)
+        const prefix = allowed.writeFiles ? 'Wrote' : 'Would write'
+        console.log(prefix, path.basename(file), sizesToString(sizes))
     }
-    return { file, size }
+    return { file, sizes }
 }
 
 /**

@@ -54,14 +54,11 @@ export function exportsToString(programNodes) {
 
 /**
  *
- * @param {string} file
- * @param {string} content
- * @returns {Promise<string>} file written to
+ * @param {Array<ProgramNode>} programNodes
+ * @returns {Array<string>}
  */
-export async function writeFile(file, content) {
-    await fs.writeFile(file, content, 'utf-8')
-    console.log(`Wrote ${file}`)
-    return file
+export function programNodeNames(programNodes) {
+    return programNodes.map(node => node.name)
 }
 
 /**

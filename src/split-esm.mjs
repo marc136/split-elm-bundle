@@ -2,8 +2,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { jsParser } from './js-parser.mjs'
 import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs'
-import { convert, writeFile, exportsToString } from './convert-iife.mjs'
-import { sizesToString, stringSizeGzip, writeFileAndPrintSizes } from './file-size.mjs'
+import { convert, exportsToString, programNodeNames } from './convert-iife.mjs'
+import { writeFileAndPrintSizes } from './file-size.mjs'
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
@@ -88,56 +88,22 @@ function fetchChunksForDependencies(deps, map) {
 }
 
 /**
- * @param {string} filePath
- * @param {import('./types/public.js').SideEffects} effects
- */
-export async function splitPerProgramWithSingleSharedData(filePath, effects) {
-    const iife = await fs.readFile(filePath, 'utf-8')
-    if (effects.printLogs) {
-        console.log(`Working in directory ${path.dirname(filePath)}`)
-    }
-    const before = await stringSizeGzip(iife)
-    if (effects.printLogs) {
-        console.log(`Read ${path.basename(filePath)} ${sizesToString(before)}`)
-    }
-    const input = { file: filePath, sizes: before }
-    const { esm, programNodes } = convert(iife)
-
-    if (programNodes.length < 1) {
-        throw new Error(`Could not extract a main program from '${filePath}'`)
-    } else if (programNodes.length === 1) {
-        console.warn('Did not split the file because it contains only one program.')
-        const esm = convertAndRemoveDeadCode(iife)
-        let newEsm = `// extracted from ${filePath}\n` + esm
-        await writeFileAndPrintSizes(filePath + '.dce.mjs', newEsm, effects)
-    } else {
-        await splitWith1stMode({
-            outDir: path.dirname(filePath),
-            basename: path.basename(filePath, path.extname(filePath)) + '.split',
-            programNodes,
-            esm,
-            effects,
-        })
-        // return { input, output }
-    }
-}
-
-/**
  * Splits the `esm` code into one file per Elm program.
  * Each imports the shared code from `${basename}.Shared.mjs` and exports only one Elm program.
  *
  * The global code that creates side effects is also copied into the shared file.
  *
  * @param {{
+ *  input: import('./file-size.mjs').FileWithSizes,
  *  outDir: string,
  *  basename: string,
  *  programNodes: Array<ProgramNode>,
  *  esm: string
  *  effects: import('./types/public.js').SideEffects
  * }} param
- * @returns {Promise<import('./file-size.mjs').FileWithSizes[]>} List of written files
+ * @returns {Promise<import('./types/public.js').ManyProgramsWithSingleShared>}
  */
-async function splitWith1stMode({ outDir, basename, programNodes, esm, effects }) {
+export async function splitWith1stMode({ input, outDir, basename, programNodes, esm, effects }) {
     const files = []
     const map = getDeclarationsAndDependencies(esm)
 
@@ -165,10 +131,12 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm, effects }
     const sharedLib = 'shared'
     const sharedFilename = `${basename}.${sharedLib}.mjs`
     const dest = path.join(outDir, sharedFilename)
-    files.push(writeFileAndPrintSizes(dest, sharedCode, effects))
+    const sharedFile = writeFileAndPrintSizes(dest, sharedCode, effects)
 
     for (const program of programs) {
-        console.log('Extracting', program.name)
+        if (effects.printLogs) {
+            console.log('Extracting', program.name)
+        }
         let orig = depsToString(program.needs) + exportsToString([program])
 
         const tree = jsParser.parse(orig)
@@ -187,7 +155,16 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm, effects }
         const dest = path.join(outDir, `${basename}.${program.name}.mjs`)
         files.push(writeFileAndPrintSizes(dest, code, effects))
     }
-    return Promise.all(files)
+
+    return {
+        result: 'split-programs-one-shared',
+        input,
+        programs: programNodeNames(programNodes),
+        output: {
+            shared: await sharedFile,
+            programs: await Promise.all(files),
+        },
+    }
 }
 
 /**

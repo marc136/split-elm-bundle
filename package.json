@@ -2,7 +2,7 @@
   "name": "split-elm-bundle",
   "version": "0.0.1",
   "description": "",
-  "main": "bin/split-elm-bundle.mjs",
+  "main": "src/main.mjs",
   "type": "module",
   "scripts": {
     "check": "tsc",
