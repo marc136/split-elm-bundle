@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examples overview</title>
+</head>
+
+<body>
+    <h1>Load all examples on one page</h1>
+    <p>Code splitting does not make sense in this case, but I can test that the programs don't interfere</p>
+
+    <main>
+    </main>
+
+    <script type="module">
+        const main = document.querySelector('main');
+        ['Clock', 'TextField', 'Quotes'].forEach(program => {
+            const section = document.createElement('section');
+            const title = document.createElement('h2');
+            title.textContent = 'Program: ' + program;
+            section.appendChild(title);
+            const node = document.createElement('noscript')
+            main.appendChild(section)
+            section.innerHTML =
+                `<h2>Program: ${program}</h2>\n<br>`
+
+            import(`./examples.split.${program}.mjs`).then(Elm => {
+                Elm[program].init({ node: section.getElementsByTagName('br')[0] });
+            });
+        });
+    </script>
+</body>
+
+</html>
