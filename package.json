@@ -2,7 +2,8 @@
   "name": "split-elm-bundle",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "bin/split-elm-bundle.mjs",
+  "type": "module",
   "scripts": {
     "check": "tsc",
     "coverage": "vitest run --coverage",
