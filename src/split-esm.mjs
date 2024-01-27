@@ -1,9 +1,9 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { jsParser } from './js-parser.mjs';
-import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs';
-import { convert, writeFile, exportsToString } from './convert-iife.mjs';
-import { byteToStr, sizesToString, stringSizeGzip, writeFileAndPrintSizes } from './file-size.mjs';
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { jsParser } from './js-parser.mjs'
+import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs'
+import { convert, writeFile, exportsToString } from './convert-iife.mjs'
+import { byteToStr, sizesToString, stringSizeGzip, writeFileAndPrintSizes } from './file-size.mjs'
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
@@ -19,11 +19,10 @@ import { byteToStr, sizesToString, stringSizeGzip, writeFileAndPrintSizes } from
  * @typedef {{ programs: Array<SplitMode1Program>, shared: Set<string> }} SplitMode1State
  */
 
-
 /**
- * 
+ *
  * @param {import("fs").PathLike | fs.FileHandle} input
- * @returns 
+ * @returns
  */
 export async function wipAnalyze(input) {
     const iife = await fs.readFile(input, 'utf-8')
@@ -40,13 +39,12 @@ export async function wipAnalyze(input) {
 }
 
 /**
- * @param {string} string 
+ * @param {string} string
  * @returns {number} length of string in byte
  */
 function byteSize(string) {
-    return (new TextEncoder().encode(string)).length
+    return new TextEncoder().encode(string).length
 }
-
 
 /**
  * @param {string} iife compiled Elm js file
@@ -58,12 +56,11 @@ export function convertAndRemoveDeadCode(iife) {
     const map = getDeclarationsAndDependencies(esm)
 
     const deps = new Set()
-    programNodes.forEach(n =>
-        getDependenciesOf(n.name, map).forEach(deps.add, deps)
-    )
+    programNodes.forEach(n => getDependenciesOf(n.name, map).forEach(deps.add, deps))
 
-    let strings = dependenciesToChunks(deps, map.declarations, map.unnamed)
-        .map(chunk => esm.substring(chunk.startIndex, chunk.endIndex))
+    let strings = dependenciesToChunks(deps, map.declarations, map.unnamed).map(chunk =>
+        esm.substring(chunk.startIndex, chunk.endIndex),
+    )
 
     strings.push(exportsToString(programNodes))
 
@@ -71,21 +68,23 @@ export function convertAndRemoveDeadCode(iife) {
 }
 
 /**
- * @param {Set<string>} deps 
- * @param {import('./dependency-graph.mjs').DependencyMap} declarations 
+ * @param {Set<string>} deps
+ * @param {import('./dependency-graph.mjs').DependencyMap} declarations
  * @param {Array<Chunk>} chunks additional chunks to insert (e.g. unnamed declarations or side effects)
- * @returns {Array<Chunk>} 
+ * @returns {Array<Chunk>}
  */
 export function dependenciesToChunks(deps, declarations, chunks) {
-    return fetchChunksForDependencies(deps, declarations)
-        .concat(...chunks)
-        // sort deps by occurrence in Elm file
-        .sort((a, b) => a.startIndex - b.startIndex)
+    return (
+        fetchChunksForDependencies(deps, declarations)
+            .concat(...chunks)
+            // sort deps by occurrence in Elm file
+            .sort((a, b) => a.startIndex - b.startIndex)
+    )
 }
 
 /**
- * @param {Set<string>} deps 
- * @param {import('./dependency-graph.mjs').DependencyMap} map 
+ * @param {Set<string>} deps
+ * @param {import('./dependency-graph.mjs').DependencyMap} map
  * @returns {Array<Chunk>}
  */
 function fetchChunksForDependencies(deps, map) {
@@ -108,34 +107,37 @@ export async function splitPerProgramWithSingleSharedData(filePath) {
     const { esm, programNodes } = convert(iife)
 
     if (programNodes.length < 1) {
-        throw new Error(`Could not extract a main program from '${filePath}'`);
+        throw new Error(`Could not extract a main program from '${filePath}'`)
     } else if (programNodes.length === 1) {
-        console.warn('Did not split the file because it contains only one program.');
-        const esm = convertAndRemoveDeadCode(iife);
-        let newEsm = `// extracted from ${filePath}\n` + esm;
-        await writeFileAndPrintSizes(filePath + '.dce.mjs', newEsm);
+        console.warn('Did not split the file because it contains only one program.')
+        const esm = convertAndRemoveDeadCode(iife)
+        let newEsm = `// extracted from ${filePath}\n` + esm
+        await writeFileAndPrintSizes(filePath + '.dce.mjs', newEsm)
+        // return { input, output: [output] }
     } else {
+        // const output = await splitWith1stMode({
         await splitWith1stMode({
             outDir: path.dirname(filePath),
             basename: path.basename(filePath, path.extname(filePath)) + '.split',
             programNodes,
             esm,
-        });
+        })
+        // return { input, output }
     }
 }
 
 /**
  * Splits the `esm` code into one file per Elm program.
- * Each imports that shared code from `${basename}.Shared.mjs` and exports only one Elm program.
+ * Each imports the shared code from `${basename}.Shared.mjs` and exports only one Elm program.
  *
  * The global code that creates side effects is also copied into the shared file.
  *
  * @param {SplitMode1} param
- * @returns {Promise<string[]>} List of written files
+ * @returns {Promise<import('./file-size.mjs').FileWithSizes[]>} List of written files
  */
 async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
-    const files = [];
-    const map = getDeclarationsAndDependencies(esm);
+    const files = []
+    const map = getDeclarationsAndDependencies(esm)
 
     const programs = programNodes.map(n => ({
         name: n.name,
@@ -143,59 +145,59 @@ async function splitWith1stMode({ outDir, basename, programNodes, esm }) {
         needs: getDependenciesOf(n.name, map),
         // keeping track of the shared dependencies so I can replace them later
         shared: new Set(),
-    }));
-    const shared = new Set(map.unnamed.flatMap(({ needs }) => needs));
+    }))
+    const shared = new Set(map.unnamed.flatMap(({ needs }) => needs))
 
-    transformStateForSplitMode1({ programs, shared });
+    transformStateForSplitMode1({ programs, shared })
 
     /** @type {(deps: Set<string>, chunks?: Array<Chunk>) => string } */
-    const depsToString = (deps, chunks = []) => dependenciesToChunks(deps, map.declarations, chunks)
-        .map(chunk => esm.substring(chunk?.startIndex ?? 0, chunk?.endIndex ?? 0))
-        .join('\n')
-        + '\n';
+    const depsToString = (deps, chunks = []) =>
+        dependenciesToChunks(deps, map.declarations, chunks)
+            .map(chunk => esm.substring(chunk?.startIndex ?? 0, chunk?.endIndex ?? 0))
+            .join('\n') + '\n'
 
     // also inserts the unnamed code
-    let sharedCode = depsToString(shared, map.unnamed);
-    sharedCode += `export { ${Array.from(shared).join(', ')} };\n`;
+    let sharedCode = depsToString(shared, map.unnamed)
+    sharedCode += `export { ${Array.from(shared).join(', ')} };\n`
 
-    const sharedLib = 'shared';
-    const sharedFilename = `${basename}.${sharedLib}.mjs`;
-    const dest = path.join(outDir, sharedFilename);
-    files.push(writeFileAndPrintSizes(dest, sharedCode));
+    const sharedLib = 'shared'
+    const sharedFilename = `${basename}.${sharedLib}.mjs`
+    const dest = path.join(outDir, sharedFilename)
+    files.push(writeFileAndPrintSizes(dest, sharedCode))
 
     for (const program of programs) {
-        console.log('Extracting', program.name);
-        let orig = depsToString(program.needs) + exportsToString([program]);
+        console.log('Extracting', program.name)
+        let orig = depsToString(program.needs) + exportsToString([program])
 
-        const tree = jsParser.parse(orig);
-        const identifiers = tree.rootNode.descendantsOfType('identifier')
-            .filter(node => shared.has(node.text));
+        const tree = jsParser.parse(orig)
+        const identifiers = tree.rootNode
+            .descendantsOfType('identifier')
+            .filter(node => shared.has(node.text))
 
-        let code = `import * as ${sharedLib} from './${sharedFilename}';\n`;
-        let lastIndex = 0;
+        let code = `import * as ${sharedLib} from './${sharedFilename}';\n`
+        let lastIndex = 0
         for (const identifier of identifiers) {
-            code += orig.substring(lastIndex, identifier.startIndex) + sharedLib + '.';
-            lastIndex = identifier.startIndex;
+            code += orig.substring(lastIndex, identifier.startIndex) + sharedLib + '.'
+            lastIndex = identifier.startIndex
         }
-        code += orig.substring(lastIndex) + '\n';
+        code += orig.substring(lastIndex) + '\n'
 
-        const dest = path.join(outDir, `${basename}.${program.name}.mjs`);
-        files.push(writeFileAndPrintSizes(dest, code));
+        const dest = path.join(outDir, `${basename}.${program.name}.mjs`)
+        files.push(writeFileAndPrintSizes(dest, code))
     }
-    return Promise.all(files);
+    return Promise.all(files)
 }
-
 
 /**
  * Removes common dependencies from the `programs` and adds them to `shared`.
- * 
+ *
  * @param {SplitMode1State} data
  * @returns {undefined}
  */
 export function transformStateForSplitMode1({ programs, shared }) {
     // compare all needed dependencies between all programs
     for (let index = 0; index < programs.length; index++) {
-        const a = programs[index];
+        const a = programs[index]
         for (const s of shared.values()) {
             if (a.needs.delete(s)) a.shared.add(s)
         }

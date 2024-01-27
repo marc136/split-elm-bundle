@@ -1,34 +1,33 @@
-import assert from 'node:assert';
-import { jsParser } from './js-parser.mjs';
+import assert from 'node:assert'
+import { jsParser } from './js-parser.mjs'
 
 /**
  * @typedef CodeWithDeps
  * @prop {number} startIndex
  * @prop {number} endIndex
  * @prop {Array<string>} needs
- * 
- * @typedef {{ name: string } & CodeWithDeps} SingleDeclaration 
+ *
+ * @typedef {{ name: string } & CodeWithDeps} SingleDeclaration
  * @typedef {{ names: string[] } & CodeWithDeps} MultipleDeclarations
- * 
+ *
  * @typedef {import('tree-sitter').SyntaxNode} SyntaxNode
  * @typedef {import('tree-sitter').TreeCursor} TreeCursor
- * 
+ *
  * @typedef Dependencies
  * @prop {DependencyMap} declarations
- * @prop {Array<CodeWithDeps>} unnamed 
- * 
+ * @prop {Array<CodeWithDeps>} unnamed
+ *
  * @typedef {Map<string, SingleDeclaration>} DependencyMap
- * 
+ *
  * @typedef DeclarationsInScope
  * @prop {DeclarationsInScope|undefined} parentScope
  * @prop {Array<string>} declarations
  * @prop {boolean} isFunctionScope
  */
 
-
 /**
  * Gathers all direct and indirect needs of an identifier in one Set.
- * 
+ *
  * @param {string} identifier
  * @param { Dependencies } deps
  * @returns {Set<string>}
@@ -58,7 +57,7 @@ export function getDependenciesOf(identifier, deps) {
  * This parses the global scope of the Elm compiler's IIFE output.
  * It only needs a reduced amount of possible declarations compared to the more
  * general and complicated findNeedsInStatementBlock.
- * @param {string} code 
+ * @param {string} code
  * @returns {Dependencies}
  */
 export function getDeclarationsAndDependencies(code) {
@@ -95,7 +94,12 @@ export function getDeclarationsAndDependencies(code) {
                     const needs = findNeeds(cursor.currentNode, newScope())
                     if (Array.isArray(needs) && needs.length > 0) {
                         /** @type MultipleDeclarations */
-                        const parsed = { names: [], needs, startIndex: cursor.startIndex, endIndex: cursor.endIndex }
+                        const parsed = {
+                            names: [],
+                            needs,
+                            startIndex: cursor.startIndex,
+                            endIndex: cursor.endIndex,
+                        }
                         unnamed.push(parsed)
                     }
                     break
@@ -118,22 +122,26 @@ export function getDeclarationsAndDependencies(code) {
                 throw parsed
             }
             if (parsed) {
-                if ("names" in parsed) {
+                if ('names' in parsed) {
                     for (const name of parsed.names) {
                         declarations.set(name, {
-                            name, needs: parsed.needs,
-                            startIndex: parsed.startIndex, endIndex: parsed.endIndex,
+                            name,
+                            needs: parsed.needs,
+                            startIndex: parsed.startIndex,
+                            endIndex: parsed.endIndex,
                         })
                     }
                 }
-                if ("name" in parsed) {
+                if ('name' in parsed) {
                     declarations.set(parsed.name, parsed)
                 }
             }
         } while (cursor.gotoNextSibling())
-
     } catch (ex) {
-        console.warn('Failed at position:', { start: cursor.startPosition, end: cursor.endPosition })
+        console.warn('Failed at position:', {
+            start: cursor.startPosition,
+            end: cursor.endPosition,
+        })
         console.warn(cursor.currentNode.text)
         throw ex
     }
@@ -142,7 +150,7 @@ export function getDeclarationsAndDependencies(code) {
 
 /**
  * Parses a broken variable declaration and returns a new cursor that can parse the rest of the file
- * @param {TreeCursor} cursor 
+ * @param {TreeCursor} cursor
  * @param {string} code
  * @returns {Error|{declaration:SingleDeclaration,cursor:TreeCursor}}
  */
@@ -162,7 +170,7 @@ function parseBrokenVariableDeclaration(cursor, code) {
                 name,
                 startIndex,
                 endIndex,
-                needs: []
+                needs: [],
             }
 
             // and then parse a new tree from that position
@@ -174,19 +182,21 @@ function parseBrokenVariableDeclaration(cursor, code) {
                         // start and end position are not needed
                         startPosition: { row: 1, column: 1 },
                         endPosition: { row: 1, column: 1 },
-                    }
-                ]
+                    },
+                ],
             })
 
             const newCursor = tree.walk()
-            // Note: The first child is a comment node in this case, 
+            // Note: The first child is a comment node in this case,
             // so we don't care that we will immediately move to the next sibling.
             // If we need more changes, we might need to introduce a way to skip
             // `cursor.gotoNextSibling` inside `getDeclarationsAndDependencies`
             newCursor.gotoFirstChild()
             return { declaration, cursor: newCursor }
         } else {
-            throw new Error(`More code that tree-sitter cannot parse with identifier '${cursor.nodeText}'`)
+            throw new Error(
+                `More code that tree-sitter cannot parse with identifier '${cursor.nodeText}'`,
+            )
         }
     }
 
@@ -194,7 +204,7 @@ function parseBrokenVariableDeclaration(cursor, code) {
 }
 
 /**
- * @param {SyntaxNode} node a `VariableDeclarationNode` with type `variable_declaration` 
+ * @param {SyntaxNode} node a `VariableDeclarationNode` with type `variable_declaration`
  * @param {DeclarationsInScope} scope is mutated
  * @returns {MultipleDeclarations|Error}
  */
@@ -241,16 +251,18 @@ function parseVariableDeclarations(node, scope) {
  * @returns {SingleDeclaration|Error}
  */
 function parseFunctionDeclaration(node, parentScope) {
-    if (node.childCount !== 4
-        || node.children[0].type !== 'function'
-        || node.children[1].type !== 'identifier'
-        || node.children[2].type !== 'formal_parameters'
-        || node.children[3].type !== 'statement_block') {
+    if (
+        node.childCount !== 4 ||
+        node.children[0].type !== 'function' ||
+        node.children[1].type !== 'identifier' ||
+        node.children[2].type !== 'formal_parameters' ||
+        node.children[3].type !== 'statement_block'
+    ) {
         return new Error('Invalid shape for a `function_declaration`')
     }
     const name = node.children[1].text
     // Add the function declaration to the current scope
-    // Note: This is not hoisting the declaration as in JS, if it was used before 
+    // Note: This is not hoisting the declaration as in JS, if it was used before
     // it will show up in the list of needed identifiers.
     parentScope.declarations.push(name)
 
@@ -287,9 +299,10 @@ function parseExport(node, scope) {
  * @returns {SingleDeclaration|Error}
  */
 function parseNamedExport(node, scope) {
-    if (node.childCount !== 2
-        || node.children[0].type !== 'export'
-        || node.children[1].type !== 'lexical_declaration'
+    if (
+        node.childCount !== 2 ||
+        node.children[0].type !== 'export' ||
+        node.children[1].type !== 'lexical_declaration'
     ) {
         console.error(node.toString())
         console.error(node.children)
@@ -311,13 +324,15 @@ function parseNamedExport(node, scope) {
 /**
  * @param {SyntaxNode} node
  * @param {DeclarationsInScope} scope current and parent declarations
- * @returns {Array<string>} 
+ * @returns {Array<string>}
  */
 function findNeeds(node, scope) {
     switch (node.type) {
         case 'function_declaration': {
             const parsed = parseFunctionDeclaration(node, scope)
-            if (parsed instanceof Error) throw parsed
+            if (parsed instanceof Error) {
+                throw parsed
+            }
             return parsed.needs
         }
         case 'function': {
@@ -357,7 +372,7 @@ function findNeeds(node, scope) {
             return wrapIdentifier(node.text, scope)
         case 'labeled_statement': {
             assert(node.children[0].type === 'statement_identifier')
-            const subscope = newScope(scope)//, [node.children[0].text])
+            const subscope = newScope(scope) //, [node.children[0].text])
             return findNeeds(node.children[2], subscope)
         }
         case 'return_statement': {
@@ -373,7 +388,7 @@ function findNeeds(node, scope) {
             assert(node.children[1].type === 'parenthesized_expression')
             assert(node.children[2].type === 'switch_body')
             return findNeeds(node.children[1], scope).concat(
-                findNeeds(node.children[2], newScope(scope))
+                findNeeds(node.children[2], newScope(scope)),
             )
         }
         case 'object':
@@ -399,23 +414,45 @@ function findNeeds(node, scope) {
         case 'throw_statement': {
             return node.children.flatMap(n => findNeeds(n, scope))
         }
-        case '{': case '}':
-        case ';': case ':':
-        case '&': case '|': case '^': case '~': case '<<': case '>>': case '>>>':
-        case '&&': case '||':
-        case '[': case ']':
+        case '{':
+        case '}':
+        case ';':
+        case ':':
+        case '&':
+        case '|':
+        case '^':
+        case '~':
+        case '<<':
+        case '>>':
+        case '>>>':
+        case '&&':
+        case '||':
+        case '[':
+        case ']':
         case '?':
         case ',':
         case '.':
         case '=':
-        case '+=': case '-=':
-        case '++': case '--':
-        case '+': case '-': case '*': case '/': case '%':
-        case '!': case '!=': case '!==':
-        case '==': case '===':
-        case '<': case '>':
-        case '<=': case '>=':
-        case 'true': case 'false':
+        case '+=':
+        case '-=':
+        case '++':
+        case '--':
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '%':
+        case '!':
+        case '!=':
+        case '!==':
+        case '==':
+        case '===':
+        case '<':
+        case '>':
+        case '<=':
+        case '>=':
+        case 'true':
+        case 'false':
         case 'null':
         case 'undefined':
         case 'regex':
@@ -424,9 +461,14 @@ function findNeeds(node, scope) {
         case 'empty_statement':
         case 'number':
         case 'string':
-        case 'do': case 'while': case 'for':
-        case 'new': case 'case': case 'throw':
-        case 'typeof': case 'instanceof':
+        case 'do':
+        case 'while':
+        case 'for':
+        case 'new':
+        case 'case':
+        case 'throw':
+        case 'typeof':
+        case 'instanceof':
         case 'in':
         case 'default':
         case 'comment':
@@ -441,10 +483,9 @@ function findNeeds(node, scope) {
     }
 }
 
-
 /**
  * Creates a new child scope from the given parent scope
- * @param {DeclarationsInScope|undefined} parentScope 
+ * @param {DeclarationsInScope|undefined} parentScope
  * @param {Array<string>} declarations
  * @returns {DeclarationsInScope}
  */
@@ -453,8 +494,8 @@ function newScope(parentScope = undefined, declarations = []) {
 }
 
 /**
- * @param {string} identifier 
- * @param {DeclarationsInScope} scope 
+ * @param {string} identifier
+ * @param {DeclarationsInScope} scope
  * @returns {Array<string>} empty array if identifier is known in scope
  */
 function wrapIdentifier(identifier, scope) {
@@ -512,8 +553,11 @@ function findNeedsInForStatement(node, parentScope) {
                 // Variable declaration is hoisted out of a for_statement and can be used later.
                 // For now, I only implemented one level. Hopefully it won't need more.
                 const newVar = parseVariableDeclarations(cursor.currentNode, parentScope)
-                if (!newVar) throw new Error(`Could not parse variable declaration '${cursor.currentNode.text}'`)
-                if (newVar instanceof Error) {
+                if (!newVar) {
+                    throw new Error(
+                        `Could not parse variable declaration '${cursor.currentNode.text}'`,
+                    )
+                } else if (newVar instanceof Error) {
                     throw newVar
                 }
                 needs.push(newVar.needs)
@@ -545,7 +589,6 @@ function findNeedsInForStatement(node, parentScope) {
     // Hoisting of the declaration would be the corred behavior, but this works for now.
     return needs.flat().filter(need => !scope.declarations.includes(need))
 }
-
 
 /**
  * @param {SyntaxNode} node with type `for_statement`
@@ -586,7 +629,7 @@ function findNeedsInForInStatement(node, parentScope) {
 
 /**
  * @param {SyntaxNode} node with type `statement_block`
- * @param {DeclarationsInScope} parentScope 
+ * @param {DeclarationsInScope} parentScope
  */
 function findNeedsInStatementBlock(node, parentScope) {
     assert(node.type === 'statement_block')
@@ -601,15 +644,18 @@ function findNeedsInStatementBlock(node, parentScope) {
         needs.push(findNeeds(cursor.currentNode, scope))
     } while (cursor.gotoNextSibling())
 
-    return needs.flat()
-        // fake hoisting of variable declarations by dropping needs that are in scope
-        .filter(need => !scope.declarations.includes(need))
+    return (
+        needs
+            .flat()
+            // fake hoisting of variable declarations by dropping needs that are in scope
+            .filter(need => !scope.declarations.includes(need))
+    )
 }
 
 /**
  * Returns true if the identifier was declared in the current scope or one of its parents
- * @param {string} identifier 
- * @param {DeclarationsInScope} scope 
+ * @param {string} identifier
+ * @param {DeclarationsInScope} scope
  * @returns {boolean}
  */
 function isDeclaredInScope(identifier, scope) {
@@ -620,7 +666,7 @@ function isDeclaredInScope(identifier, scope) {
 
 /**
  * Checks a hardcoded list of global identifiers
- * @param {string} identifier 
+ * @param {string} identifier
  * @returns {boolean}
  */
 function existsInGlobalScope(identifier) {
@@ -681,8 +727,8 @@ function existsInGlobalScope(identifier) {
 /**
  * Variable declarations are scoped to functions or global context.
  * This function finds the correct scope in the chain upwards.
- * @param {string} identifier 
- * @param {DeclarationsInScope} scope 
+ * @param {string} identifier
+ * @param {DeclarationsInScope} scope
  */
 function insertVariableDeclarationIntoScope(identifier, scope) {
     if (scope.isFunctionScope || typeof scope.parentScope === 'undefined') {
@@ -691,7 +737,7 @@ function insertVariableDeclarationIntoScope(identifier, scope) {
 }
 
 /**
- * @param {SyntaxNode} node 
+ * @param {SyntaxNode} node
  */
 function logNode(node) {
     console.log('###')

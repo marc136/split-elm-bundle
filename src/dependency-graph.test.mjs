@@ -1,14 +1,14 @@
 import fs from 'node:fs/promises'
 import { expect, describe, test } from 'vitest'
-import assert from 'node:assert';
-import { jsParser } from './js-parser.mjs';
-import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs';
+import assert from 'node:assert'
+import { jsParser } from './js-parser.mjs'
+import { getDeclarationsAndDependencies, getDependenciesOf } from './dependency-graph.mjs'
 
 describe('parse short chunks', () => {
-  test('Empty variable declaration', () => {
-    const chunk = 'var _VirtualDom_divertHrefToApp;'
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+    test('Empty variable declaration', () => {
+        const chunk = 'var _VirtualDom_divertHrefToApp;'
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_divertHrefToApp",
@@ -21,12 +21,12 @@ describe('parse short chunks', () => {
             ],
           ]
         `)
-  })
+    })
 
-  test('Variable declaration with ternary expression', () => {
-    const chunk = `var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+    test('Variable declaration with ternary expression', () => {
+        const chunk = `var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_doc",
@@ -39,10 +39,10 @@ describe('parse short chunks', () => {
             ],
           ]
         `)
-  })
+    })
 
-  test('Variable declaration with nested function call and declaration', () => {
-    const chunk = `
+    test('Variable declaration with nested function call and declaration', () => {
+        const chunk = `
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
 	// NOTE: this function needs _Platform_export available to work
@@ -61,8 +61,8 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
 
 	return {};
 });`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_VirtualDom_init",
@@ -79,10 +79,10 @@ var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args
         ],
       ]
     `)
-  })
+    })
 
-  test('Variable declarations are scoped to function scope', () => {
-    const chunk = `
+    test('Variable declarations are scoped to function scope', () => {
+        const chunk = `
 function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 {
     var index = rootIndex;
@@ -98,8 +98,8 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
         _VirtualDom_diffHelp(yNextNode, index);
     }
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_VirtualDom_diffKeyedKids",
@@ -114,16 +114,16 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
         ],
       ]
     `)
-  })
+    })
 
-  test('Function declaration with a simple call expression', () => {
-    const chunk = `
+    test('Function declaration with a simple call expression', () => {
+        const chunk = `
 function _VirtualDom_appendChild(parent, child)
 {
     parent.appendChild(child);
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_VirtualDom_appendChild",
@@ -136,14 +136,14 @@ function _VirtualDom_appendChild(parent, child)
             ],
           ]
         `)
-  })
+    })
 
-  test('Function declaration for curried `F2`', () => {
-    const chunk = `function F2(fun) {
+    test('Function declaration for curried `F2`', () => {
+        const chunk = `function F2(fun) {
   return F(2, fun, function(a) { return function(b) { return fun(a,b); }; })
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "F2",
@@ -158,17 +158,17 @@ function _VirtualDom_appendChild(parent, child)
             ],
           ]
         `)
-  })
+    })
 
-  test('Function declaration returning multiple nested functions', () => {
-    const chunk = `
+    test('Function declaration returning multiple nested functions', () => {
+        const chunk = `
 function F4(fun) {
   return F(4, fun, function(a) { return function(b) { return function(c) {
     return function(d) { return fun(a, b, c, d); }; }; };
   });
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "F4",
@@ -183,10 +183,10 @@ function F4(fun) {
             ],
           ]
         `)
-  })
+    })
 
-  test('Nested function declaration which calls itself', () => {
-    const chunk = `
+    test('Nested function declaration which calls itself', () => {
+        const chunk = `
 function _VirtualDom_makeCallback(eventNode, initialHandler)
 {
   console.log(callback)
@@ -200,8 +200,8 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 
   return callback;
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
 [
   [
     "_VirtualDom_makeCallback",
@@ -214,11 +214,10 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
   ],
 ]
 `)
-  })
+    })
 
-
-  test('static html rendering', () => {
-    const chunk = `
+    test('static html rendering', () => {
+        const chunk = `
 var $author$project$Static$main = A2(
     $elm$html$Html$div,
     _List_fromArray(
@@ -229,8 +228,8 @@ var $author$project$Static$main = A2(
         [
             $elm$html$Html$text('Static')
         ]));`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "$author$project$Static$main",
@@ -250,10 +249,10 @@ var $author$project$Static$main = A2(
             ],
           ]
         `)
-  })
+    })
 
-  test('Understands `update_expression` in for loop', () => {
-    const chunk = `
+    test('Understands `update_expression` in for loop', () => {
+        const chunk = `
 var _JsArray_foldr = F3(function(func, acc, array)
 {
     for (var i = array.length - 1; i >= 0; i--)
@@ -264,8 +263,8 @@ var _JsArray_foldr = F3(function(func, acc, array)
     return acc;
 });
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_JsArray_foldr",
@@ -281,17 +280,17 @@ var _JsArray_foldr = F3(function(func, acc, array)
         ],
       ]
     `)
-  })
+    })
 
-  test('throw an Error', () => {
-    const chunk = `
+    test('throw an Error', () => {
+        const chunk = `
     function _Debug_crash_UNUSED(identifier)
     {
             throw new Error(baseUrl + '/elm/core/blob/1.0.0/hints/' + identifier + '.md');
     }
     `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "_Debug_crash_UNUSED",
@@ -306,10 +305,10 @@ var _JsArray_foldr = F3(function(func, acc, array)
             ],
           ]
         `)
-  })
+    })
 
-  test('`switch_statement` and variables it introduces in the scope', () => {
-    const chunk = `
+    test('`switch_statement` and variables it introduces in the scope', () => {
+        const chunk = `
 function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
 {
     switch(identifier)
@@ -339,8 +338,8 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
     }
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Debug_crash",
@@ -356,12 +355,12 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
         ],
       ]
     `)
-  })
+    })
 
-  test('Many `variable_delarator`s in one `variable_declaration`', () => {
-    const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+    test('Many `variable_delarator`s in one `variable_declaration`', () => {
+        const chunk = `var a=1, b= c, d = a + "(d)", e =globalVariable`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
           [
             [
               "a",
@@ -413,10 +412,10 @@ function _Debug_crash(identifier, fact1, fact2, fact3, fact4)
             ],
           ]
         `)
-  })
+    })
 
-  test('`assignment_expression` inside `for_statement`', () => {
-    const chunk = `
+    test('`assignment_expression` inside `for_statement`', () => {
+        const chunk = `
 function _Utils_eq(x, y)
 {
         for (
@@ -429,8 +428,8 @@ function _Utils_eq(x, y)
         return isEqual;
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Utils_eq",
@@ -446,10 +445,10 @@ function _Utils_eq(x, y)
         ],
       ]
     `)
-  })
+    })
 
-  test('`for_in_statement`', () => {
-    const chunk = `
+    test('`for_in_statement`', () => {
+        const chunk = `
 function abc() {
     for (var one in x) {
         console.log(one)
@@ -463,8 +462,8 @@ function abc() {
 }
 
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "abc",
@@ -480,17 +479,17 @@ function abc() {
         ],
       ]
     `)
-  })
+    })
 
-  test('`sequence_expression` inside `for_statement`', () => {
-    const chunk = `
+    test('`sequence_expression` inside `for_statement`', () => {
+        const chunk = `
 function _Utils_cmp(x,y,ord) 
 {
     for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); fake = global1, x = x.b, y = global2) {} // WHILE_CONSES
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Utils_cmp",
@@ -507,10 +506,10 @@ function _Utils_cmp(x,y,ord)
         ],
       ]
     `)
-  })
+    })
 
-  test('`while` and `do...while` loops', () => {
-    const chunk = `
+    test('`while` and `do...while` loops', () => {
+        const chunk = `
 function _String_reverse(str)
 {
         var len = str.length;
@@ -538,8 +537,8 @@ function _String_reverse(str)
         } while (global3)
         return arr.join('');
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_String_reverse",
@@ -556,10 +555,10 @@ function _String_reverse(str)
         ],
       ]
     `)
-  })
+    })
 
-  test('`augmented_assignment_expression`', () => {
-    const chunk = `
+    test('`augmented_assignment_expression`', () => {
+        const chunk = `
 function _Char_fromCode(code)
 {
         return _Utils_chr(
@@ -575,8 +574,8 @@ function _Char_fromCode(code)
         );
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Char_fromCode",
@@ -591,11 +590,10 @@ function _Char_fromCode(code)
         ],
       ]
     `)
-  })
+    })
 
-
-  test('`assignment_expression` inside function `arguments`', () => {
-    const chunk = `
+    test('`assignment_expression` inside function `arguments`', () => {
+        const chunk = `
 function sendToApp(msg, viewMetadata)
 {
         var pair = A2(update, msg, model);
@@ -603,8 +601,8 @@ function sendToApp(msg, viewMetadata)
         _Platform_enqueueEffects(managers, pair.b, subscriptions(model));
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "sendToApp",
@@ -627,10 +625,10 @@ function sendToApp(msg, viewMetadata)
         ],
       ]
     `)
-  })
+    })
 
-  test('Simplified _Platform_effectManager declaration', () => {
-    const chunk = `
+    test('Simplified _Platform_effectManager declaration', () => {
+        const chunk = `
 function _Platform_setupOutgoingPort(name, sendToApp)
 {
     _Platform_effectManagers[name].c = F3(function(router, cmdList, state)
@@ -639,8 +637,8 @@ function _Platform_setupOutgoingPort(name, sendToApp)
     });
 }
 `
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Platform_setupOutgoingPort",
@@ -657,10 +655,10 @@ function _Platform_setupOutgoingPort(name, sendToApp)
         ],
       ]
     `)
-  })
+    })
 
-  test('`assignment_expression` inside function `arguments`', () => {
-    const chunk = `
+    test('`assignment_expression` inside function `arguments`', () => {
+        const chunk = `
 function _Platform_setupOutgoingPort(name)
 {
     _Platform_effectManagers[name].c = F3(function(router, cmdList, state)
@@ -678,8 +676,8 @@ function _Platform_setupOutgoingPort(name)
             return init;
     });
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_Platform_setupOutgoingPort",
@@ -699,10 +697,10 @@ function _Platform_setupOutgoingPort(name)
         ],
       ]
     `)
-  })
+    })
 
-  test('labeled statements', () => {
-    const chunk = `
+    test('labeled statements', () => {
+        const chunk = `
 var $elm$core$Dict$foldr = F3(
 	function (func, acc, t) {
 		foldr:
@@ -728,8 +726,8 @@ var $elm$core$Dict$foldr = F3(
 			}
 		}
 	});`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "$elm$core$Dict$foldr",
@@ -746,11 +744,10 @@ var $elm$core$Dict$foldr = F3(
         ],
       ]
     `)
-  })
+    })
 
-
-  test('`_VirtualDom_init`', () => {
-    const chunk = `
+    test('`_VirtualDom_init`', () => {
+        const chunk = `
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
 // NOTE: this function needs _Platform_export available to work
@@ -769,8 +766,8 @@ node.parentNode.replaceChild(
 
 return {};
 });`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
 [
   [
     "_VirtualDom_init",
@@ -787,10 +784,10 @@ return {};
   ],
 ]
 `)
-  })
+    })
 
-  test('`_VirtualDom_nodeNS`', () => {
-    const chunk = `
+    test('`_VirtualDom_nodeNS`', () => {
+        const chunk = `
 var _VirtualDom_nodeNS = F2(function(namespace, tag)
 {
   return F2(function(factList, kidList)
@@ -813,8 +810,8 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
     };
   });
 });`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "_VirtualDom_nodeNS",
@@ -831,10 +828,10 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
         ],
       ]
     `)
-  })
+    })
 
-  test('Find `_VirtualDom_doc` inside return statement', () => {
-    const chunk = `
+    test('Find `_VirtualDom_doc` inside return statement', () => {
+        const chunk = `
 function _VirtualDom_render(vNode, eventNode)
 {
 var tag = vNode.$;
@@ -849,8 +846,8 @@ if (tag === 0)
   return _VirtualDom_doc.createTextNode(vNode.a);
 }
 }`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
     [
       [
         "_VirtualDom_render",
@@ -865,11 +862,11 @@ if (tag === 0)
       ],
     ]
   `)
-  })
+    })
 })
 
 describe('Get dependencies of simplified static (Html) main program', () => {
-  const chunk = `
+    const chunk = `
 var $elm$html$Html$div;
 var $elm$html$Html$Attributes$id;
 var $elm$html$Html$text;
@@ -904,16 +901,16 @@ var $author$project$Static$main = A2(
             $elm$html$Html$text('Static')
         ]));
     `
-  const result = getDeclarationsAndDependencies(chunk)
+    const result = getDeclarationsAndDependencies(chunk)
 
-  test('For `_List_fromArray`', () => {
-    const actual = getDependenciesOf('_List_fromArray', result)
-    expect(actual).toMatchObject(new Set(['_List_Nil', '_List_Cons']))
-  })
+    test('For `_List_fromArray`', () => {
+        const actual = getDependenciesOf('_List_fromArray', result)
+        expect(actual).toMatchObject(new Set(['_List_Nil', '_List_Cons']))
+    })
 
-  test('For $author$project$Static$main', () => {
-    const actual = getDependenciesOf('$author$project$Static$main', result)
-    expect(actual).toMatchInlineSnapshot(`
+    test('For $author$project$Static$main', () => {
+        const actual = getDependenciesOf('$author$project$Static$main', result)
+        expect(actual).toMatchInlineSnapshot(`
           Set {
             "A2",
             "$elm$html$Html$div",
@@ -924,17 +921,17 @@ var $author$project$Static$main = A2(
             "_List_Cons",
           }
         `)
-  })
+    })
 })
 
 describe('Side effects', () => {
-  test("needs to pick up `_Platform_effectManagers['Task']`", () => {
-    const chunk = `
+    test("needs to pick up `_Platform_effectManagers['Task']`", () => {
+        const chunk = `
 _Platform_effectManagers['Task'] = _Platform_createManager($elm$core$Task$init, $elm$core$Task$onEffects, $elm$core$Task$onSelfMsg, $elm$core$Task$cmdMap);
 var $elm$core$Task$command = _Platform_leaf('Task');
 `
-    const actual = getDeclarationsAndDependencies(chunk)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = getDeclarationsAndDependencies(chunk)
+        expect(actual).toMatchInlineSnapshot(`
     {
       "declarations": Map {
         "$elm$core$Task$command" => {
@@ -963,15 +960,14 @@ var $elm$core$Task$command = _Platform_leaf('Task');
       ],
     }
   `)
-  })
+    })
 })
 
-
 describe('ESM exports added by the convert script', () => {
-  test('Parse `export const BrowserElement = { init: ... };`', () => {
-    const chunk = `export const BrowserElement = { init: $author$project$BrowserElement$main($elm$json$Json$Decode$int)(0) };`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+    test('Parse `export const BrowserElement = { init: ... };`', () => {
+        const chunk = `export const BrowserElement = { init: $author$project$BrowserElement$main($elm$json$Json$Decode$int)(0) };`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
         [
           [
             "BrowserElement",
@@ -987,14 +983,14 @@ describe('ESM exports added by the convert script', () => {
           ],
         ]
       `)
-  })
+    })
 
-  test('Parse `export const BrowserSandbox = { init: ... };`', () => {
-    const chunk = `
+    test('Parse `export const BrowserSandbox = { init: ... };`', () => {
+        const chunk = `
 export const BrowserSandbox = { init: $author$project$BrowserSandbox$main(
 $elm$json$Json$Decode$succeed(0))(0) };`
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "BrowserSandbox",
@@ -1010,12 +1006,12 @@ $elm$json$Json$Decode$succeed(0))(0) };`
         ],
       ]
     `)
-  })
+    })
 
-  test('Parse `export const Elm = { BrowserElement, BrowserSandbox };`', () => {
-    const chunk = 'export const Elm = { BrowserElement, BrowserSandbox };'
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+    test('Parse `export const Elm = { BrowserElement, BrowserSandbox };`', () => {
+        const chunk = 'export const Elm = { BrowserElement, BrowserSandbox };'
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "Elm",
@@ -1031,12 +1027,12 @@ $elm$json$Json$Decode$succeed(0))(0) };`
         ],
       ]
     `)
-  })
+    })
 
-  test('Parse `export default Elm;`', () => {
-    const chunk = 'export default Elm;'
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+    test('Parse `export default Elm;`', () => {
+        const chunk = 'export default Elm;'
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "defaultExport",
@@ -1051,11 +1047,10 @@ $elm$json$Json$Decode$succeed(0))(0) };`
         ],
       ]
     `)
-  })
+    })
 
-
-  test('Named export, default export and `BrowserElement.main`', () => {
-    const chunk = `
+    test('Named export, default export and `BrowserElement.main`', () => {
+        const chunk = `
 var $author$project$BrowserElement$main = $elm$browser$Browser$element(
 {at: $author$project$BrowserElement$init, az: $author$project$BrowserElement$subscriptions, aB: $author$project$BrowserElement$update, aC: $author$project$BrowserElement$view});
 
@@ -1066,8 +1061,8 @@ export const Elm = { BrowserElement, BrowserSandbox };
 export default Elm;
 `
 
-    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-    expect(actual).toMatchInlineSnapshot(`
+        const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+        expect(actual).toMatchInlineSnapshot(`
       [
         [
           "$author$project$BrowserElement$main",
@@ -1133,17 +1128,16 @@ export default Elm;
         ],
       ]
     `)
-  })
+    })
 })
 
-
 /**
- * 
+ *
  * @typedef {import('tree-sitter').SyntaxNode} SyntaxNode
- * 
- * @param {SyntaxNode} node 
+ *
+ * @param {SyntaxNode} node
  * @returns {Array<SyntaxNode>} where every `.type` === 'identifier'
  */
 function getAllIdentifiers(node) {
-  return node.descendantsOfType('identifier')
+    return node.descendantsOfType('identifier')
 }

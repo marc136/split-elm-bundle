@@ -7,10 +7,10 @@ import { getDeclarationsAndDependencies } from './dependency-graph.mjs'
  */
 
 test('Parse elm-explorations/markdown Kernel code', async () => {
-  const kernelCode = 'test/problems/elm-exploration/markdown/src/Elm/Kernel/Markdown.js'
-  const chunk = await fs.readFile(kernelCode, 'utf-8')
-  const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
-expect(actual).toMatchInlineSnapshot(`
+    const kernelCode = 'test/problems/elm-exploration/markdown/src/Elm/Kernel/Markdown.js'
+    const chunk = await fs.readFile(kernelCode, 'utf-8')
+    const actual = Array.from(getDeclarationsAndDependencies(chunk).declarations)
+    expect(actual).toMatchInlineSnapshot(`
   [
     [
       "_Markdown_toHtml",
@@ -86,6 +86,3 @@ expect(actual).toMatchInlineSnapshot(`
   ]
 `)
 })
-
-
-

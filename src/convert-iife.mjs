@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises'
-import { jsParser } from './js-parser.mjs';
+import { jsParser } from './js-parser.mjs'
 
 /**
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
@@ -37,23 +37,25 @@ export function convert(iife) {
     return { esm, programNodes }
 }
 
-
 /**
- * 
+ *
  * @param {Array<ProgramNode>} programNodes
  * @returns {string}
  */
 export function exportsToString(programNodes) {
     return [
-        programNodes.map(program => `export const ${program.name} = { init: ${program.init.text} };`).join('\n'),
+        programNodes
+            .map(program => `export const ${program.name} = { init: ${program.init.text} };`)
+            .join('\n'),
         `export const Elm = { ${programNodes.map(program => program.name).join(', ')} };`,
-        'export default Elm;'].join('\n')
+        'export default Elm;',
+    ].join('\n')
 }
 
 /**
- * 
- * @param {string} file 
- * @param {string} content 
+ *
+ * @param {string} file
+ * @param {string} content
  * @returns {Promise<string>} file written to
  */
 export async function writeFile(file, content) {
@@ -63,8 +65,8 @@ export async function writeFile(file, content) {
 }
 
 /**
- * 
- * @param {string} code 
+ *
+ * @param {string} code
  * @returns {Array<{ name: string, init: SyntaxNode }>}
  */
 function parsePlatformExport(code) {
@@ -72,45 +74,49 @@ function parsePlatformExport(code) {
     const obj = tree.rootNode.child(0)?.child(0)
     if (!obj) throw new Error('Could not find object argument in `_Platform_export` function call')
     // get all pairs of `<FileName>: {'init':$author$project$<FileName>$main(<..>)(<..>)}`
-    const programNodes =
-        obj.namedChildren
-            .filter(node => node.type === 'pair' && node.childCount === 3)
-            .map(node => parseProgramPair(node.children[0], node.children[2]))
+    const programNodes = obj.namedChildren
+        .filter(node => node.type === 'pair' && node.childCount === 3)
+        .map(node => parseProgramPair(node.children[0], node.children[2]))
 
     return programNodes
 }
 
 /**
- * 
- * @param {SyntaxNode} key 
- * @param {SyntaxNode} value 
+ *
+ * @param {SyntaxNode} key
+ * @param {SyntaxNode} value
  * @returns {{ name: string, init: SyntaxNode }}
  */
 function parseProgramPair(key, value) {
     const name = getKeyOfObject(key)
     if (name instanceof Error) {
-        throw new Error(`Could not parse the program name from '${key.text}'`, { cause: name })
+        throw new Error(`Could not parse the program name from '${key.text}'`, {
+            cause: name,
+        })
     }
 
-    if (value.type !== 'object'
-        || value.childCount !== 3
-        || value.children[1].type !== 'pair'
-        || value.children[1].childCount !== 3
+    if (
+        value.type !== 'object' ||
+        value.childCount !== 3 ||
+        value.children[1].type !== 'pair' ||
+        value.children[1].childCount !== 3
     ) {
         throw new Error(`Expected an object with only one pair inside, but got '${value.text}'`)
     }
     let pair = value.children[1]
     const init = getKeyOfObject(pair.children[0])
     if (init !== 'init') {
-        throw new Error(`Expected an object key named 'init', but got '${init}'`, { cause: init })
+        throw new Error(`Expected an object key named 'init', but got '${init}'`, {
+            cause: init,
+        })
     }
 
     return { name, init: pair.children[2] }
 }
 
 /**
- * 
- * @param {SyntaxNode} node an `ObjectNode` with type `object` 
+ *
+ * @param {SyntaxNode} node an `ObjectNode` with type `object`
  * @returns {string|Error}
  */
 function getKeyOfObject(node) {

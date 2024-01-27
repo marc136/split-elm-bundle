@@ -1,8 +1,8 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { promisify } from 'node:util';
-import zlib from 'node:zlib';
-const gzip = promisify(zlib.gzip);
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { promisify } from 'node:util'
+import zlib from 'node:zlib'
+const gzip = promisify(zlib.gzip)
 
 /**
  * @typedef { import('./types/file-size.js').Sizes } Sizes
@@ -14,7 +14,7 @@ const gzip = promisify(zlib.gzip);
  * @returns {Promise<Sizes>} sizes in byte
  */
 export async function fileSizeGzip(file) {
-    return fs.readFile(file).then(bufferSizeGzip);
+    return fs.readFile(file).then(bufferSizeGzip)
 }
 
 /**
@@ -22,8 +22,8 @@ export async function fileSizeGzip(file) {
  * @returns {Promise<Sizes>} sizes in byte
  */
 export async function stringSizeGzip(string) {
-    const raw = Buffer.from(string, 'utf-8');
-    return bufferSizeGzip(raw);
+    const raw = Buffer.from(string, 'utf-8')
+    return bufferSizeGzip(raw)
 }
 
 /**
@@ -31,8 +31,8 @@ export async function stringSizeGzip(string) {
  * @returns {Promise<Sizes>} sizes in byte
  */
 async function bufferSizeGzip(raw) {
-    const zipped = await gzip(raw);
-    return { raw: raw.byteLength, gzip: zipped.byteLength };
+    const zipped = await gzip(raw)
+    return { raw: raw.byteLength, gzip: zipped.byteLength }
 }
 
 /**
@@ -41,10 +41,10 @@ async function bufferSizeGzip(raw) {
  * @returns {Promise<FileWithSizes>}
  */
 export async function writeFileAndPrintSizes(file, content) {
-    await fs.writeFile(file, content, 'utf-8');
-    const size = await stringSizeGzip(content);
-    console.log(`Wrote ${path.basename(file)} ${sizesToString(size)}`);
-    return { file, size };
+    await fs.writeFile(file, content, 'utf-8')
+    const size = await stringSizeGzip(content)
+    console.log(`Wrote ${path.basename(file)} ${sizesToString(size)}`)
+    return { file, size }
 }
 
 /**
@@ -52,7 +52,7 @@ export async function writeFileAndPrintSizes(file, content) {
  * @returns string
  */
 export function sizesToString({ raw, gzip }) {
-    return `${byteToStr(raw)} (${byteToStr(gzip)} gzip)`;
+    return `${byteToStr(raw)} (${byteToStr(gzip)} gzip)`
 }
 
 /**
@@ -62,11 +62,11 @@ export function sizesToString({ raw, gzip }) {
  */
 export function byteToStr(number) {
     if (isNaN(number) || number < 0) {
-        throw new Error('Expected a natural number >= 0');
+        throw new Error('Expected a natural number >= 0')
     }
     if (number < 5_000) {
-        return number + 'B';
+        return number + 'B'
     } else {
-        return (number / 1000).toFixed(1) + 'KiB';
+        return (number / 1000).toFixed(1) + 'KiB'
     }
 }

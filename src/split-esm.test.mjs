@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'vitest'
-import { transformStateForSplitMode1 } from "./split-esm.mjs"
+import { transformStateForSplitMode1 } from './split-esm.mjs'
 
 test('Simple split of shared deps', () => {
     /** @type import('tree-sitter').SyntaxNode */
