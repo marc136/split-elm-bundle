@@ -1,2 +1,5 @@
 elm-stuff
 examples.js
+www/*.mjs
+src/[abcdefghijklmnopqrstuvwxyz]*.elm
+src/*.json
