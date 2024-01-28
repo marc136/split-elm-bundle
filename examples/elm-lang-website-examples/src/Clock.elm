@@ -100,14 +100,14 @@ view model =
             toFloat (Time.toSecond model.zone model.time)
     in
     svg
-        [ viewBox "0 0 400 400"
-        , width "400"
-        , height "400"
+        [ viewBox "0 0 200 200"
+        , width "200"
+        , height "200"
         ]
-        [ circle [ cx "200", cy "200", r "120", fill "#1293D8" ] []
-        , viewHand 6 60 (hour / 12)
-        , viewHand 6 90 (minute / 60)
-        , viewHand 3 90 (second / 60)
+        [ circle [ cx "100", cy "100", r "90", fill "#1293D8" ] []
+        , viewHand 6 50 (hour / 12)
+        , viewHand 6 80 (minute / 60)
+        , viewHand 3 80 (second / 60)
         ]
 
 
@@ -118,14 +118,14 @@ viewHand width length turns =
             2 * pi * (turns - 0.25)
 
         x =
-            200 + length * cos t
+            100 + length * cos t
 
         y =
-            200 + length * sin t
+            100 + length * sin t
     in
     line
-        [ x1 "200"
-        , y1 "200"
+        [ x1 "100"
+        , y1 "100"
         , x2 (String.fromFloat x)
         , y2 (String.fromFloat y)
         , stroke "white"

@@ -90,8 +90,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div []
-        [ h2 [] [ text "Random Quotes" ]
-        , viewQuote model
+        [ viewQuote model
         ]
 
 
@@ -109,7 +108,7 @@ viewQuote model =
 
         Success quote ->
             div []
-                [ button [ onClick MorePlease, style "display" "block" ] [ text "More Please!" ]
+                [ button [ onClick MorePlease, style "display" "block" ] [ text "Another quote, please!" ]
                 , blockquote [] [ text quote.quote ]
                 , p [ style "text-align" "right" ]
                     [ text "— "

@@ -5,32 +5,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examples overview</title>
+
+    <style>
+        main {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+        }
+
+        main>section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-height: 30vh;
+            overflow: auto;
+        }
+
+        main>section>h2 {
+            margin-bottom: 0.5em;
+        }
+
+        main>section>.scaled-frame {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        main>section>.scaled-frame>iframe {
+            flex: 1 0 auto;
+            box-sizing: border-box;
+            width: 200%;
+            height: 200%;
+            transform-origin: 0 0;
+            transform: scale(0.5);
+            object-fit: contain;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Load all examples on one page</h1>
     <p>Code splitting does not make sense in this case, but I can test that the programs don't interfere</p>
 
-    <main>
-    </main>
+    <main><noscript>You need to activate JavaScript to see the Elm programs</noscript></main>
 
     <script type="module">
         const main = document.querySelector('main');
-        ['Clock', 'TextField', 'Quotes'].forEach(program => {
-            const section = document.createElement('section');
-            const title = document.createElement('h2');
-            title.textContent = 'Program: ' + program;
-            section.appendChild(title);
-            const node = document.createElement('noscript')
-            main.appendChild(section)
-            section.innerHTML =
-                `<h2>Program: ${program}</h2>\n<br>`
+        function createSection(program) {
+            const section = main.appendChild(document.createElement('section'));
+            section.innerHTML = `<h2>Program: <a href="./${program}.html">${program}</a></h2>`
+            return section;
+        }
+
+        ['Clock', 'Cube', 'TextField', 'Quotes'].forEach(program => {
+            const section = createSection(program);
+            const node = section.appendChild(document.createElement('noscript'));
 
             import(`./examples.split.${program}.mjs`).then(Elm => {
-                Elm[program].init({ node: section.getElementsByTagName('br')[0] });
+                Elm[program].init({ node });
             });
         });
+
+        ['Animation', 'Mouse'].forEach(program => {
+            const section = createSection(program);
+            const fill = section.appendChild(document.createElement('div'));
+            fill.className = 'scaled-frame';
+            const iframe = fill.appendChild(document.createElement('iframe'));
+            iframe.src = `./${program}.html`;
+        })
     </script>
+
+    <p>Copyright of these examples belongs to
+        <a href="https://github.com/elm/elm-lang.org/tree/8193eb7552e26989d444167d6006eb50616ff554/examples">
+            Evan Czaplicki
+        </a>
+    </p>
+
 </body>
 
 </html>
