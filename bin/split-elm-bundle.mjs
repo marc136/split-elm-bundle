@@ -66,7 +66,7 @@ try {
             case '.js':
                 const result = await splitPerProgramWithSingleSharedData(file, effects)
                 if (report === 'json') {
-                    console.log(inspect(result, false, 5))
+                    console.log(JSON.stringify(result, undefined, 2))
                 }
                 break
             default:

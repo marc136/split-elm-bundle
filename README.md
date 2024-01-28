@@ -36,3 +36,50 @@ With <options> one of
 `--report=json` will not print immediate logs, but only one JSON report in the end
 `--dry-run` disables writing files to disk
 ```
+
+### Example JSON report
+
+From running `split-elm-bundle.mjs examples/elm-lang-website-examples/www/examples.js --report=json --dry-run`
+
+```json
+{
+  "result": "split-programs-one-shared",
+  "input": {
+    "file": "examples/elm-lang-website-examples/www/examples.js",
+    "sizes": { "raw": 253622, "gzip": 53453 }
+  },
+  "programs": [ "Animation", "TextField", "Quotes", "Mouse", "Cube", "Clock" ],
+  "output": {
+    "shared": {
+      "file": "examples/elm-lang-website-examples/www/examples.shared.mjs",
+      "sizes": { "raw": 117044, "gzip": 24391 }
+    },
+    "programs": [
+      {
+        "file": "examples/elm-lang-website-examples/www/examples.Animation.mjs",
+        "sizes": { "raw": 7135, "gzip": 1514 }
+      },
+      {
+        "file": "examples/elm-lang-website-examples/www/examples.TextField.mjs",
+        "sizes": { "raw": 3783, "gzip": 1155 }
+      },
+      {
+        "file": "examples/elm-lang-website-examples/www/examples.Quotes.mjs",
+        "sizes": { "raw": 15273, "gzip": 3661 }
+      },
+      {
+        "file": "examples/elm-lang-website-examples/www/examples.Mouse.mjs",
+        "sizes": { "raw": 11375, "gzip": 2131 }
+      },
+      {
+        "file": "examples/elm-lang-website-examples/www/examples.Cube.mjs",
+        "sizes": { "raw": 40021, "gzip": 8833 }
+      },
+      {
+        "file": "examples/elm-lang-website-examples/www/examples.Clock.mjs",
+        "sizes": { "raw": 6791, "gzip": 1652 }
+      }
+    ]
+  }
+}
+```
