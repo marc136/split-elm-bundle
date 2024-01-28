@@ -1,7 +1,7 @@
 {
   "name": "split-elm-bundle",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Split the bundled JS code of multiple Elm programs into one .mjs file per program",
   "main": "src/main.mjs",
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
   "bin": {
     "split-elm-bundle": "bin/split-elm-bundle.mjs"
   },
-  "keywords": [],
+  "keywords": ["elm"],
   "author": "Marc Walter",
   "private": true,
   "license": "UNLICENSED",
