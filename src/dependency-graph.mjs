@@ -712,11 +712,13 @@ function existsInGlobalScope(identifier) {
         case 'MouseEvent':
         case 'navigator':
         case 'requestAnimationFrame':
+        case 'cancelAnimationFrame':
         case 'setInterval':
         case 'setTimeout':
         case 'String':
         case 'URL':
         case 'window':
+        case 'WeakMap':
         case 'XMLHttpRequest':
             return true
         default:

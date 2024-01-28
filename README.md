@@ -37,10 +37,3 @@ With <options> one of
 `--dry-run` disables writing files to disk
 ```
 
-## Important drawback
-
-Right now, the tool can only safely split `Browser.Sandbox` or `Browser.Element` programs.
-  
-The Elm runtime is not designed to include multiple `Browser.document` or `Browser.application` programs on the same HTML page and each such program assumes that it has exclusive access to overwrite the variable `_VirtualDom_divertHrefToApp`.  
-
-Right now, the variable is extracted into the shared ESM file and cannot be assigned by the runtime (specifically the `_VirtualDom_render` function).

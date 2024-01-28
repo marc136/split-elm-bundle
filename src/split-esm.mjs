@@ -9,7 +9,7 @@ import { writeFileAndPrintSizes } from './file-size.mjs'
  * @typedef { import('tree-sitter').SyntaxNode} SyntaxNode
  * @typedef { import('./convert-iife.mjs').ProgramNode} ProgramNode
  *
- * @typedef {{ startIndex: number, endIndex: number, needs: Array<string>}} Chunk
+ * @typedef {{ startIndex: number, endIndex: number, needs: Array<string>, replacedContent?: string }} Chunk
  */
 
 /**
@@ -43,16 +43,13 @@ function byteSize(string) {
  * @returns {string}
  */
 export function convertAndRemoveDeadCode(iife) {
-    let result = ''
     const { esm, programNodes } = convert(iife)
     const map = getDeclarationsAndDependencies(esm)
 
     const deps = new Set()
     programNodes.forEach(n => getDependenciesOf(n.name, map).forEach(deps.add, deps))
 
-    let strings = dependenciesToChunks(deps, map.declarations, map.unnamed).map(chunk =>
-        esm.substring(chunk.startIndex, chunk.endIndex),
-    )
+    let strings = dependenciesToChunks(deps, map.declarations, map.unnamed).map(chunkToString(esm))
 
     strings.push(exportsToString(programNodes))
 
@@ -83,9 +80,38 @@ function fetchChunksForDependencies(deps, map) {
     return Array.from(deps, key => {
         const value = map.get(key)
         if (!value) throw new Error(`Could not find dependency '${key}' in map`)
-        return value
+        const replacedContent = replacements.get(key)
+        return { replacedContent, ...value }
     })
 }
+
+/**
+ *
+ * @param {string} esm
+ * @returns {(chunk:Chunk) => string}
+ */
+function chunkToString(esm) {
+    return chunk => {
+        if (chunk.replacedContent) return chunk.replacedContent
+        else return esm.substring(chunk?.startIndex ?? 0, chunk?.endIndex ?? 0)
+    }
+}
+
+/**
+ * For some function calls it is important that the global window context is passed.
+ * Otherwise it leads to an `Illegal invocation` error.
+ * `requestAnimationFrame` and `cancelAnimationFrame` for instance.
+ * @type { Map<string,string> }
+ **/
+const replacements = new Map()
+replacements.set(
+    '_Browser_requestAnimationFrame',
+    'var _Browser_requestAnimationFrame = window.requestAnimationFrame.bind(window)',
+)
+replacements.set(
+    '_Browser_cancelAnimationFrame',
+    'var _Browser_cancelAnimationFrame = window.cancelAnimationFrame.bind(window)',
+)
 
 /**
  * Splits the `esm` code into one file per Elm program.
@@ -120,9 +146,8 @@ export async function splitWith1stMode({ input, outDir, basename, programNodes, 
 
     /** @type {(deps: Set<string>, chunks?: Array<Chunk>) => string } */
     const depsToString = (deps, chunks = []) =>
-        dependenciesToChunks(deps, map.declarations, chunks)
-            .map(chunk => esm.substring(chunk?.startIndex ?? 0, chunk?.endIndex ?? 0))
-            .join('\n') + '\n'
+        dependenciesToChunks(deps, map.declarations, chunks).map(chunkToString(esm)).join('\n') +
+        '\n'
 
     // also inserts the unnamed code
     let sharedCode = depsToString(shared, map.unnamed)
@@ -185,6 +210,10 @@ export function transformStateForSplitMode1({ programs, shared }) {
         // compare to all other programs
         for (let b of programs.slice(index + 1)) {
             a.needs.forEach(need => {
+                if (elementsToAlwaysShare.includes(need)) {
+                    shared.add(need)
+                    a.shared.add(need)
+                }
                 if (b.needs.has(need)) {
                     shared.add(need)
                     a.shared.add(need)
@@ -201,3 +230,12 @@ export function transformStateForSplitMode1({ programs, shared }) {
         }
     }
 }
+
+const elementsToAlwaysShare = [
+    // this is re-assigned by `Browser.Document` programs and needs to live next to the `stepperBuilder` passed to `_Platform_initialize`
+    '_VirtualDom_divertHrefToApp',
+    '_Platform_initialize',
+    '_Browser_document',
+    '_Debugger_document',
+    '_VirtualDom_render',
+]
