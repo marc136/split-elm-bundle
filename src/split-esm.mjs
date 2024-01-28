@@ -115,7 +115,7 @@ replacements.set(
 
 /**
  * Splits the `esm` code into one file per Elm program.
- * Each imports the shared code from `${basename}.split.shared.mjs` and exports only one Elm program.
+ * Each imports the shared code from `${basename}.shared.mjs` and exports only one Elm program.
  *
  * The global code that creates side effects is also copied into the shared file.
  *

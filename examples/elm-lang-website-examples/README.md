@@ -14,11 +14,11 @@ Extracting Animation
 Extracting TextField
 Extracting Quotes
 Extracting Clock
-Wrote examples.split.TextField.mjs 3789B (1160B gzip)
-Wrote examples.split.Clock.mjs 6.8KiB (1656B gzip)
-Wrote examples.split.Quotes.mjs 15.5KiB (3683B gzip)
-Wrote examples.split.Animation.mjs 26.4KiB (4811B gzip)
-Wrote examples.split.shared.mjs 97.2KiB (21.2KiB gzip)
+Wrote examples.TextField.mjs 3789B (1160B gzip)
+Wrote examples.Clock.mjs 6.8KiB (1656B gzip)
+Wrote examples.Quotes.mjs 15.5KiB (3683B gzip)
+Wrote examples.Animation.mjs 26.4KiB (4811B gzip)
+Wrote examples.shared.mjs 97.2KiB (21.2KiB gzip)
 ```
 
 Then host the `www` directory with an arbitrary static file server and open the `index.html` file.

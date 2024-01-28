@@ -61,7 +61,7 @@
             const section = createSection(program);
             const node = section.appendChild(document.createElement('noscript'));
 
-            import(`./examples.split.${program}.mjs`).then(Elm => {
+            import(`./examples.${program}.mjs`).then(Elm => {
                 Elm[program].init({ node });
             });
         });

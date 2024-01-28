@@ -17,7 +17,7 @@ And then you can import a program e.g. like this:
 ```html
 <main id="elm"></main>
 <script type="module">
-  import { Clock } from './examples.split.Clock.mjs';
+  import { Clock } from './examples.Clock.mjs';
   const app = Clock.init({ node: document.getElementById('elm') });
 </script> 
 ```

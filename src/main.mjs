@@ -24,7 +24,7 @@ export async function splitPerProgramWithSingleSharedData(filePath, effects) {
             return splitWith1stMode({
                 input: data.input,
                 outDir: path.dirname(filePath),
-                basename: path.basename(filePath, path.extname(filePath)) + '.split',
+                basename: path.basename(filePath, path.extname(filePath)),
                 programNodes: data.programNodes,
                 esm: data.esm,
                 effects,
