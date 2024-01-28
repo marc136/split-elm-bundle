@@ -1,6 +1,6 @@
 Copied from https://github.com/elm/elm-lang.org/ all Elm code in `src/` was written by Evan Czaplicki who owns the copyright on it.
 
-I only added made the examples directly compilable and added html files.
+I only made the examples directly compilable and added html files.
 
 Execute `./build.sh` or run the following:
 
@@ -24,4 +24,3 @@ Wrote examples.shared.mjs 97.2KiB (21.2KiB gzip)
 Then host the `www` directory with an arbitrary static file server and open the `index.html` file.
 
 E.g. `caddy file-server --root www` with [caddy](https://caddyserver.com/docs/command-line#caddy-file-server).
-
