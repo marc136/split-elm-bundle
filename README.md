@@ -22,7 +22,7 @@ And then you can import a program e.g. like this:
 </script> 
 ```
 
-See the [examples directory](https://github.com/marc136/node-folder-hash/tree/main/examples/elm-lang-website-examples) for more information.
+See the [examples directory](https://github.com/marc136/split-elm-bundle/tree/main/examples/elm-lang-website-examples) for more information.
 
 
 ## CLI commands
@@ -36,4 +36,3 @@ With <options> one of
 `--report=json` will not print immediate logs, but only one JSON report in the end
 `--dry-run` disables writing files to disk
 ```
-
