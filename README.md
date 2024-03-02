@@ -1,5 +1,3 @@
-# split-elm-bundle
-
 This is a small command-line utility to split JavaScript bundles that the [Elm compiler](https://elm-lang.org) created into multiple ES modules.  
 
 See it in action [on this page with example programs](https://marc-walter.info/posts/2024-03-02_elm-bundle-splitting/examples/).
