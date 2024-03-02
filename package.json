@@ -17,8 +17,7 @@
   },
   "keywords": ["elm"],
   "author": "Marc Walter",
-  "private": true,
-  "license": "UNLICENSED",
+  "license": "EUPL-1.2",
   "dependencies": {
     "tree-sitter": "^0.20.6",
     "tree-sitter-javascript": "^0.20.1"

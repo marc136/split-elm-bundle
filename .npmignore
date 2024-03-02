@@ -1,0 +1,6 @@
+*
+
+# override with specific allowed files
+!src/*.mjs
+!LICENCE.txt
+src/**/*.test.mjs

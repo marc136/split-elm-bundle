@@ -4,6 +4,8 @@ This is a small command-line utility to split JavaScript bundles that the [Elm c
 
 See it in action [on this page with example programs](https://marc-walter.info/posts/2024-03-02_elm-bundle-splitting/examples/).
 
+Copyright Marc Walter, 2024, licensed under the free [EUPL-1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12). If you have other requirements, let's talk.
+
 ## Usage
 
 ```sh
