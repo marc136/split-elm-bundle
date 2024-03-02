@@ -4,9 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Examples overview</title>
+    <title>split-elm-bundle examples</title>
 
     <style>
+        body {
+            font-family: system-ui, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: #112;
+            background-color: #fefeff;
+        }
+
         main {
             display: grid;
             gap: 1rem;
@@ -44,8 +50,19 @@
 </head>
 
 <body>
-    <h1>Load all examples on one page</h1>
-    <p>Code splitting does not make sense in this case, but I can test that the programs don't interfere</p>
+    <h1>Elm bundle code splitting examples</h1>
+    <p>This is an example page accompanying
+        <a href="https://marc-walter.info/posts/2024-03-02_elm-bundle-splitting">
+            this introductory blog post
+        </a>.
+        <br>
+        All programs were first
+        <a href="https://github.com/marc136/split-elm-bundle/blob/main/examples/elm-lang-website-examples/build.sh">
+            compiled into one JS bundle
+        </a>
+        and then each program was extracted into one ESM file and common code was placed in a shared bundle with
+        <a href="https://github.com/marc136/split-elm-bundle">split-elm-bundle</a>.
+    </p>
 
     <main><noscript>You need to activate JavaScript to see the Elm programs</noscript></main>
 
@@ -75,12 +92,17 @@
         })
     </script>
 
+    <p>Code splitting does not make sense on this overview page, but I can test that the programs don't interfere</p>
+
     <p>Copyright of these examples belongs to
         <a href="https://github.com/elm/elm-lang.org/tree/8193eb7552e26989d444167d6006eb50616ff554/examples">
             Evan Czaplicki
-        </a>
+        </a>.
+        I only made minor changes, sources are available
+        <a href="https://github.com/marc136/split-elm-bundle/tree/main/examples/elm-lang-website-examples">
+            on github
+        </a>.
     </p>
-
 </body>
 
 </html>
