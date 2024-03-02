@@ -18,6 +18,13 @@
   "keywords": ["elm"],
   "author": "Marc Walter",
   "license": "EUPL-1.2",
+  "repository": {
+    "type" : "git",
+    "url": "https://github.com/marc136/split-elm-bundle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marc136/split-elm-bundle/issues"
+  },
   "dependencies": {
     "tree-sitter": "^0.20.6",
     "tree-sitter-javascript": "^0.20.1"
